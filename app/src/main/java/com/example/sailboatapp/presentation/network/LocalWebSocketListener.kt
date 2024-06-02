@@ -1,6 +1,10 @@
 package com.example.sailboatapp.presentation.network
 
 import com.example.sailboatapp.presentation.data.readNMEA
+
+import com.example.sailboatapp.presentation.ui.screen.checkLocalConnection
+import com.example.sailboatapp.presentation.ui.screen.setLocalConnection
+
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
@@ -24,7 +28,7 @@ class LocalWebSocketListener(private val onMessageReceived: (ByteString) -> Unit
     override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
         super.onFailure(webSocket, t, response)
         println("WebSocket connection failed: ${t.message}")
-        //remoteConnection()
+        setLocalConnection(false)
     }
 
     override fun onMessage(webSocket: WebSocket, text: String) {
@@ -44,6 +48,7 @@ class LocalWebSocketListener(private val onMessageReceived: (ByteString) -> Unit
     override fun onOpen(webSocket: WebSocket, response: Response) {
         super.onOpen(webSocket, response)
         println("WebSocket connection opened")
+        setLocalConnection(true)
         //webSocket.send("Hello, World!") // Example message
 
     }

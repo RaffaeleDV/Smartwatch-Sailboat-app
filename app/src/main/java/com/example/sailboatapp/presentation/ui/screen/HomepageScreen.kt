@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -38,25 +39,72 @@ import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.Vignette
 import androidx.wear.compose.material.VignettePosition
 import com.example.sailboatapp.R
-import java.util.Calendar
-import java.util.TimeZone
+import com.example.sailboatapp.presentation.data.readNMEA
+import com.example.sailboatapp.presentation.network.Raffica
+
+class LocalConnection(){
+    var localConnectionState : Boolean = false
+
+    fun setConnectionState(state : Boolean){
+        localConnectionState = state
+    }
+
+    fun getConnectionState() : Boolean{
+        return localConnectionState
+    }
+}
+
+var locCon = LocalConnection()
+fun checkLocalConnection() : Boolean{
+    return locCon.getConnectionState()
+}
+
+fun setLocalConnection(state : Boolean){
+    locCon.setConnectionState(state)
+}
 
 @Composable
 fun Homepage(navController: NavHostController) {
 
-    val listState = rememberScalingLazyListState()
-    val vignetteState by remember {  mutableStateOf(VignettePosition.TopAndBottom) }
+    var lastVelVento = "0.0"
+    var lastShipDirection = "0.0"
 
-    val maxPages = 3
+    var connectionState by remember { mutableStateOf("") }
 
     val localViewModel: LocalViewModel = viewModel()
 
-    var latitude = localViewModel.data.collectAsState()
-    //by remember { mutableStateOf(0.0) }
-    var longitude by remember { mutableStateOf(0.0) }
+    var rafficaUiState : RafficaUiState = localViewModel.rafficaUiState
+    var raffica : Raffica = Raffica("","","")
+    when(rafficaUiState){
+        is RafficaUiState.Error -> println("Error")
+        is RafficaUiState.Loading -> println("Loading")
+        is RafficaUiState.Success -> {
+            //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
+            println("Success: Remote connection")
+            raffica = (localViewModel.rafficaUiState as RafficaUiState.Success).raffica
+        }
+    }
+
+    var nmeaData = localViewModel.data.collectAsState()
+    var nmeaDataRemote =  HashMap<String, String>()
+    connectionState = "Local"
+    if(!checkLocalConnection()){
+        val remoteViewModel: RemoteViewModel = viewModel()
+        val remoteUiState : RemoteUiState = remoteViewModel.remoteUiState
+        connectionState = "Remote"
+        when(remoteUiState){
+            is RemoteUiState.Error -> println("Error")
+            is RemoteUiState.Loading -> println("Loading")
+            is RemoteUiState.Success -> {
+                //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
+                println("Success: Remote connection")
+                nmeaDataRemote = readNMEA((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
+            }
+        }
+    }
 
 
-
+    val maxPages = 3
     var selectedPage by remember { mutableStateOf(1) }
     var finalValue by remember { mutableStateOf(0) }
 
@@ -76,6 +124,9 @@ fun Homepage(navController: NavHostController) {
                 get() = maxPages
         }
     }
+
+    val listState = rememberScalingLazyListState()
+    val vignetteState by remember {  mutableStateOf(VignettePosition.TopAndBottom) }
 
     val showVignette  by remember {
         mutableStateOf(true)
@@ -112,24 +163,48 @@ fun Homepage(navController: NavHostController) {
             // verticalArrangement = Arrangement.Top
         ) {
             item {
+
                 Text(
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
-                    color = MaterialTheme.colors.primary,
-                    text = "latitude.value"
+                    color = Color.Red,
+                    fontSize = 8.sp,
+                    text = connectionState
                 )
             }
             item {
                 Text(
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
+                    color = MaterialTheme.colors.primary,
+                    text = "Vel. Vento"
+                )
+            }
+            item {
+
+                //var lastlast = "0.0"
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.secondary,
                     fontSize = 15.sp,
                     text = (
-                            if(latitude.value.get("latitude").isNullOrEmpty())
-                                "0.0"
-                            else
-                                latitude.value.get("latitude")!!
+                            if(nmeaData.value.get("windSpeed") == null){
+                                if(nmeaDataRemote.get("windSpeed").isNullOrEmpty()){
+                                    lastVelVento
+                                }
+                                else{
+                                    nmeaDataRemote.get("windSpeed")!!
+                                }
+                            }else{
+                                if(nmeaData.value.get("windSpeed")!!.equals("0.0")){
+                                   lastVelVento
+                                }else{
+                                    lastVelVento = nmeaData.value.get("windSpeed")!!
+                                    lastVelVento
+                                }
+
+                            }
                     )
                 )
             }
@@ -147,7 +222,9 @@ fun Homepage(navController: NavHostController) {
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.secondary,
                     fontSize = 15.sp,
-                    text = "42.6kn"
+                    text = (
+                            raffica.velVento
+                    )
                 )
             }
             item {
@@ -164,7 +241,21 @@ fun Homepage(navController: NavHostController) {
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.secondary,
                     fontSize = 15.sp,
-                    text = "22°"
+                    text = (
+                            if(nmeaData.value.get("shipDirection") == null){
+
+                                if(nmeaDataRemote.get("shipDirection").isNullOrEmpty())
+                                    lastShipDirection
+                                else
+                                    nmeaDataRemote.get("shipDirection")!!
+                            }else{
+                                if(nmeaData.value.get("shipDirection")!!.equals("0.0")){
+                                    lastShipDirection
+                                }else
+                                    lastShipDirection = nmeaData.value.get("shipDirection")!!
+                                lastShipDirection
+                            }
+                    )
                 )
             }
             item { Spacer(modifier = Modifier.height(10.dp)) }

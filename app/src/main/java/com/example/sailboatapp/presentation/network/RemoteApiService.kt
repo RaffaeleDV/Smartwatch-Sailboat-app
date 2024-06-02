@@ -16,6 +16,9 @@ private val retrofit = Retrofit.Builder()
 interface RemoteApiService{
     @GET("visualizzazione.php")
     suspend fun getNmea(/*@Path("user")  user: String*/) : String
+
+    @GET("prendiAncora.php")
+    suspend fun getAncora() : String
 }
 
 object RemoteApi{
