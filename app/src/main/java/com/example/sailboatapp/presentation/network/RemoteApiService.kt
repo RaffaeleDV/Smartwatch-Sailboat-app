@@ -13,16 +13,16 @@ private val retrofit = Retrofit.Builder()
     .baseUrl(BASE_URL)
     .build()
 
-interface RemoteApiService{
+interface RemoteApiService {
     @GET("visualizzazione.php")
-    suspend fun getNmea(/*@Path("user")  user: String*/) : String
+    suspend fun getNmea(/*@Path("user")  user: String*/): String
 
     @GET("prendiAncora.php")
-    suspend fun getAncora() : String
+    suspend fun getAncora(): String
 }
 
-object RemoteApi{
-    val retrofitService : RemoteApiService by lazy {
+object RemoteApi {
+    val retrofitService: RemoteApiService by lazy {
         retrofit.create(RemoteApiService::class.java)
     }
 }

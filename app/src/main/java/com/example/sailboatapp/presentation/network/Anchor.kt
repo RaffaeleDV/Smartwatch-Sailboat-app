@@ -5,14 +5,14 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Anchor (
+data class Anchor(
     @SerializedName(value = "latitudine")
-    val latitude : String,
+    val latitude: String,
     @SerializedName(value = "longitudine")
-    val longitude : String,
+    val longitude: String,
     @SerializedName(value = "ancorato")
-    val anchored : String,
+    val anchored: String,
     @SerializedName(value = "tempo")
-    val time :String
+    val time: String
 
 )

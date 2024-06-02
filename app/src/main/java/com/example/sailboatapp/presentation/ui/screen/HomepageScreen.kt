@@ -42,24 +42,24 @@ import com.example.sailboatapp.R
 import com.example.sailboatapp.presentation.data.readNMEA
 import com.example.sailboatapp.presentation.network.Raffica
 
-class LocalConnection(){
-    var localConnectionState : Boolean = false
+class LocalConnection() {
+    var localConnectionState: Boolean = false
 
-    fun setConnectionState(state : Boolean){
+    fun setConnectionState(state: Boolean) {
         localConnectionState = state
     }
 
-    fun getConnectionState() : Boolean{
+    fun getConnectionState(): Boolean {
         return localConnectionState
     }
 }
 
 var locCon = LocalConnection()
-fun checkLocalConnection() : Boolean{
+fun checkLocalConnection(): Boolean {
     return locCon.getConnectionState()
 }
 
-fun setLocalConnection(state : Boolean){
+fun setLocalConnection(state: Boolean) {
     locCon.setConnectionState(state)
 }
 
@@ -73,9 +73,9 @@ fun Homepage(navController: NavHostController) {
 
     val localViewModel: LocalViewModel = viewModel()
 
-    var rafficaUiState : RafficaUiState = localViewModel.rafficaUiState
-    var raffica : Raffica = Raffica("","","")
-    when(rafficaUiState){
+    var rafficaUiState: RafficaUiState = localViewModel.rafficaUiState
+    var raffica: Raffica = Raffica("", "", "")
+    when (rafficaUiState) {
         is RafficaUiState.Error -> println("Error")
         is RafficaUiState.Loading -> println("Loading")
         is RafficaUiState.Success -> {
@@ -86,19 +86,20 @@ fun Homepage(navController: NavHostController) {
     }
 
     var nmeaData = localViewModel.data.collectAsState()
-    var nmeaDataRemote =  HashMap<String, String>()
+    var nmeaDataRemote = HashMap<String, String>()
     connectionState = "Local"
-    if(!checkLocalConnection()){
+    if (!checkLocalConnection()) {
         val remoteViewModel: RemoteViewModel = viewModel()
-        val remoteUiState : RemoteUiState = remoteViewModel.remoteUiState
+        val remoteUiState: RemoteUiState = remoteViewModel.remoteUiState
         connectionState = "Remote"
-        when(remoteUiState){
+        when (remoteUiState) {
             is RemoteUiState.Error -> println("Error")
             is RemoteUiState.Loading -> println("Loading")
             is RemoteUiState.Success -> {
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
                 println("Success: Remote connection")
-                nmeaDataRemote = readNMEA((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
+                nmeaDataRemote =
+                    readNMEA((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
             }
         }
     }
@@ -126,9 +127,9 @@ fun Homepage(navController: NavHostController) {
     }
 
     val listState = rememberScalingLazyListState()
-    val vignetteState by remember {  mutableStateOf(VignettePosition.TopAndBottom) }
+    val vignetteState by remember { mutableStateOf(VignettePosition.TopAndBottom) }
 
-    val showVignette  by remember {
+    val showVignette by remember {
         mutableStateOf(true)
     }
 
@@ -189,23 +190,22 @@ fun Homepage(navController: NavHostController) {
                     color = MaterialTheme.colors.secondary,
                     fontSize = 15.sp,
                     text = (
-                            if(nmeaData.value.get("windSpeed") == null){
-                                if(nmeaDataRemote.get("windSpeed").isNullOrEmpty()){
+                            if (nmeaData.value.get("windSpeed") == null) {
+                                if (nmeaDataRemote.get("windSpeed").isNullOrEmpty()) {
                                     lastVelVento
-                                }
-                                else{
+                                } else {
                                     nmeaDataRemote.get("windSpeed")!!
                                 }
-                            }else{
-                                if(nmeaData.value.get("windSpeed")!!.equals("0.0")){
-                                   lastVelVento
-                                }else{
+                            } else {
+                                if (nmeaData.value.get("windSpeed")!!.equals("0.0")) {
+                                    lastVelVento
+                                } else {
                                     lastVelVento = nmeaData.value.get("windSpeed")!!
                                     lastVelVento
                                 }
 
                             }
-                    )
+                            )
                 )
             }
             item {
@@ -224,7 +224,7 @@ fun Homepage(navController: NavHostController) {
                     fontSize = 15.sp,
                     text = (
                             raffica.velVento
-                    )
+                            )
                 )
             }
             item {
@@ -242,25 +242,25 @@ fun Homepage(navController: NavHostController) {
                     color = MaterialTheme.colors.secondary,
                     fontSize = 15.sp,
                     text = (
-                            if(nmeaData.value.get("shipDirection") == null){
+                            if (nmeaData.value.get("shipDirection") == null) {
 
-                                if(nmeaDataRemote.get("shipDirection").isNullOrEmpty())
+                                if (nmeaDataRemote.get("shipDirection").isNullOrEmpty())
                                     lastShipDirection
                                 else
                                     nmeaDataRemote.get("shipDirection")!!
-                            }else{
-                                if(nmeaData.value.get("shipDirection")!!.equals("0.0")){
+                            } else {
+                                if (nmeaData.value.get("shipDirection")!!.equals("0.0")) {
                                     lastShipDirection
-                                }else
+                                } else
                                     lastShipDirection = nmeaData.value.get("shipDirection")!!
                                 lastShipDirection
                             }
-                    )
+                            )
                 )
             }
             item { Spacer(modifier = Modifier.height(10.dp)) }
             item {
-                Row (
+                Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {

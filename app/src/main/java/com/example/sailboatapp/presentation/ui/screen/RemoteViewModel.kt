@@ -31,12 +31,14 @@ class RemoteViewModel : ViewModel() {
         private set
     var anchorRemoteUiState: AnchorRemoteUiState by mutableStateOf(AnchorRemoteUiState.Loading)
         private set
+
     /**
      * Call on init so we can display status immediately.
      */
     init {
-            startRepeatingRequests()
+        startRepeatingRequests()
     }
+
     private fun startRepeatingRequests() {
         viewModelScope.launch {
             while (true) {
@@ -60,7 +62,7 @@ class RemoteViewModel : ViewModel() {
                 RemoteUiState.Success(
                     result
                 )
-            }catch (e: IOException){
+            } catch (e: IOException) {
                 RemoteUiState.Error
             }
         }
@@ -74,7 +76,7 @@ class RemoteViewModel : ViewModel() {
                 AnchorRemoteUiState.Success(
                     result
                 )
-            }catch (e: IOException){
+            } catch (e: IOException) {
                 AnchorRemoteUiState.Error
             }
         }

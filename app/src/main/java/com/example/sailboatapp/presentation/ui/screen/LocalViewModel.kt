@@ -36,13 +36,14 @@ sealed interface AnchorLocalUiState {
 
 class LocalViewModel : ViewModel() {
     /** The mutable State that stores the status of the most recent request */
-    private val _data = MutableStateFlow<HashMap<String,String>>(HashMap<String,String>())
-    val data: StateFlow<HashMap<String,String>> = _data
+    private val _data = MutableStateFlow<HashMap<String, String>>(HashMap<String, String>())
+    val data: StateFlow<HashMap<String, String>> = _data
     var rafficaUiState: RafficaUiState by mutableStateOf(RafficaUiState.Loading)
-    private set
+        private set
 
     var anchorUiState: AnchorLocalUiState by mutableStateOf(AnchorLocalUiState.Loading)
-    private set
+        private set
+
     /**
      * Call on init so we can display status immediately.
      */
@@ -50,6 +51,7 @@ class LocalViewModel : ViewModel() {
         getNmeaLocal()
         startRepeatingRequests()
     }
+
     /**
      * Gets information from the  API Retrofit service and updates
      *
@@ -63,6 +65,7 @@ class LocalViewModel : ViewModel() {
             }
         }
     }
+
     fun getRaffica() {
         viewModelScope.launch {
             rafficaUiState = try {
@@ -74,11 +77,12 @@ class LocalViewModel : ViewModel() {
                 RafficaUiState.Success(
                     result
                 )
-            }catch (e: IOException){
+            } catch (e: IOException) {
                 RafficaUiState.Error
             }
         }
     }
+
     fun getAnchor() {
         viewModelScope.launch {
             anchorUiState = try {
@@ -89,28 +93,29 @@ class LocalViewModel : ViewModel() {
                 AnchorLocalUiState.Success(
                     result
                 )
-            }catch (e: IOException){
+            } catch (e: IOException) {
                 AnchorLocalUiState.Error
             }
         }
     }
+
     fun getNmeaLocal() {
 
-            val client = OkHttpClient()
-            val request = Request.Builder().url("ws://192.168.178.48:8080").get().build()
-            val listener = LocalWebSocketListener{ bytes ->
-                viewModelScope.launch {
-                    _data.value = processData(bytes) // Update the state with the received data
-                }
+        val client = OkHttpClient()
+        val request = Request.Builder().url("ws://192.168.178.48:8080").get().build()
+        val listener = LocalWebSocketListener { bytes ->
+            viewModelScope.launch {
+                _data.value = processData(bytes) // Update the state with the received data
             }
-            val webSocket: WebSocket = client.newWebSocket(request, listener)
+        }
+        val webSocket: WebSocket = client.newWebSocket(request, listener)
 
-            //println(webSocket.request().body.toString())
+        //println(webSocket.request().body.toString())
 
-            client.dispatcher.executorService.shutdown() // Optional: Clean up the client resources
+        client.dispatcher.executorService.shutdown() // Optional: Clean up the client resources
     }
 
-    private fun processData(bytes: ByteString): HashMap<String,String> {
+    private fun processData(bytes: ByteString): HashMap<String, String> {
         return readNMEA(String(Base64.getDecoder().decode(bytes.base64())))
     }
 
