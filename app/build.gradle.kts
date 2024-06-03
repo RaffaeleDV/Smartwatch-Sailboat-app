@@ -60,6 +60,7 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.activity.compose)
     implementation(libs.core.splashscreen)
+    implementation(libs.constraintlayout)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
@@ -107,6 +108,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
 
     implementation ("com.squareup.retrofit2:converter-gson:2.11.0")
+
+    implementation ("androidx.constraintlayout:constraintlayout-compose:1.0.1")
 
 
 

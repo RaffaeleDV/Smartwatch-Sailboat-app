@@ -1,9 +1,6 @@
 package com.example.sailboatapp.presentation.ui.screen
 
-import android.content.Context
 import android.media.MediaPlayer
-import android.os.VibrationEffect
-import android.os.Vibrator
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -25,7 +22,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
+import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
@@ -37,7 +35,6 @@ import androidx.wear.compose.material.dialog.Dialog
 import com.example.sailboatapp.R
 import com.example.sailboatapp.presentation.data.readNMEA
 import com.example.sailboatapp.presentation.network.Anchor
-import com.example.sailboatapp.presentation.network.Raffica
 import com.example.sailboatapp.presentation.orange
 import com.example.sailboatapp.presentation.red
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -51,14 +48,10 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
-import java.math.BigDecimal
-import kotlin.math.acos
 import kotlin.math.asin
-import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
-
 
 fun getDistanceBetweenPoints(
     latitude1: String,
@@ -117,6 +110,7 @@ fun checkAnchorDistance(anchorLatLng: LatLng, shipLatLng: LatLng): Boolean {
     }
     return false
 }
+
 
 @Composable
 fun Map(navController: NavHostController) {
@@ -181,9 +175,9 @@ fun Map(navController: NavHostController) {
                 println("." + list[2] + ".")
                 anchorRemoteObj =
                     Anchor(
-                        String.format("%.7f",list[0].toDouble()),
-                        String.format("%.7f",list[1].toDouble())
-                        , list[2], list[3])
+                        String.format("%.7f", list[0].toDouble()),
+                        String.format("%.7f", list[1].toDouble()), list[2], list[3]
+                    )
             }
         }
     }
@@ -350,63 +344,66 @@ fun Map(navController: NavHostController) {
                 }
             }
         }
-        if (map_visibility) {
-            GoogleMap(
-                mergeDescendants = true,
-                cameraPositionState = cameraPositionState,
-                uiSettings = MapUiSettings(
-                    compassEnabled = false,
-                    mapToolbarEnabled = false,
-                    myLocationButtonEnabled = false,
-                    zoomGesturesEnabled = true,
-                    zoomControlsEnabled = false
-                ),
-                properties = MapProperties(
-                    //isMyLocationEnabled = true,
-                ),
-                onMapLongClick = {
-                    destination_position_visibility = true
-                    destination_line_visibility = true
-                    destination_position = it
-                }
-            ) {
-                Marker(
-                    state = MarkerState(position = ship_position),
-                    rotation = 90f,
-                    anchor = Offset(0.5f, 0.5f),
-                    alpha = 10F,
-                    icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_action_ship_marker),
-                    title = "Nave",
-                    //snippet = "Descrizione\n Vento: 10"
-                )
-                Marker(
-                    state = MarkerState(position = ship_position),
-                    rotation = 0f,
-                    anchor = Offset(0.5f, 0.5f),
-                    alpha = 10F,
-                    visible = anchor_visibility,
-                    icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_action_anchor),
-                    title = "Ancora",
-                    //snippet = "Descrizione",
-                    zIndex = 1F
-                )
-                Marker(
-                    state = MarkerState(position = destination_position),
-                    rotation = 0f,
-                    //anchor = Offset(0.5f, 0.5f),
-                    visible = destination_position_visibility,
-                    icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_action_destination_icon),
-                    title = "Destinazione",
-                    //snippet = "Descrizione",
-                    zIndex = 1F
-                )
-                Polyline(
-                    points = destination_line,
-                    visible = destination_line_visibility,
-                    width = 5F,
-                    color = Color.Red
-                )
+        GoogleMap(
+            mergeDescendants = true,
+            cameraPositionState = cameraPositionState,
+            uiSettings = MapUiSettings(
+                compassEnabled = false,
+                mapToolbarEnabled = false,
+                myLocationButtonEnabled = false,
+                zoomGesturesEnabled = true,
+                zoomControlsEnabled = false
+            ),
+            properties = MapProperties(
+                //isMyLocationEnabled = true,
+            ),
+            onMapLongClick = {
+                destination_position_visibility = true
+                destination_line_visibility = true
+                destination_position = it
             }
+        ) {
+            Marker(
+                state = MarkerState(position = ship_position),
+                rotation = 90f,
+                anchor = Offset(0.5f, 0.5f),
+                alpha = 10F,
+                icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_action_ship_marker),
+                title = "Nave",
+                //snippet = "Descrizione\n Vento: 10"
+            )
+            Marker(
+                state = MarkerState(position = ship_position),
+                rotation = 0f,
+                anchor = Offset(0.5f, 0.5f),
+                alpha = 10F,
+                visible = anchor_visibility,
+                icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_action_anchor),
+                title = "Ancora",
+                //snippet = "Descrizione",
+                zIndex = 1F
+            )
+            Marker(
+                state = MarkerState(position = destination_position),
+                rotation = 0f,
+                //anchor = Offset(0.5f, 0.5f),
+                visible = destination_position_visibility,
+                icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_action_destination_icon),
+                title = "Destinazione",
+                //snippet = "Descrizione",
+                zIndex = 1F
+            )
+            Polyline(
+                points = destination_line,
+                visible = destination_line_visibility,
+                width = 5F,
+                color = Color.Red
+            )
+        }
+        ConstraintLayout(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            val (leftButton, centerButton, rightButton, bottomButton) = createRefs()
             Button(//Anchor Button
                 onClick = {
                     if (anchor_visibility)
@@ -424,8 +421,13 @@ fun Map(navController: NavHostController) {
                     contentColor = Color.Black
                 ),
                 modifier = Modifier
-                    .absoluteOffset { IntOffset(5, 160) }
+                    //.absoluteOffset { IntOffset(5, 160) }
                     .size(30.dp)
+                    .constrainAs(leftButton){
+                        top.linkTo(parent.top)
+                        bottom.linkTo(parent.bottom)
+                        start.linkTo(parent.start, margin = 5.dp)
+                    }
             ) {
                 //Text("On")
                 Icon(
@@ -443,9 +445,14 @@ fun Map(navController: NavHostController) {
                     contentColor = Color.Black
                 ),
                 modifier = Modifier
-                    .absoluteOffset { IntOffset(160, 320) }
+                    //.absoluteOffset { IntOffset(160, 320) }
                     //.offset(70.dp, 160.dp)
                     .size(30.dp)
+                    .constrainAs(bottomButton) {
+                        bottom.linkTo(parent.bottom, margin = 5.dp)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                    }
             ) {
                 //Text("On")
                 Icon(
@@ -470,9 +477,14 @@ fun Map(navController: NavHostController) {
                     contentColor = Color.Black
                 ),
                 modifier = Modifier
-                    .absoluteOffset { IntOffset(320, 165) }
+                    //.absoluteOffset { IntOffset(320, 165) }
                     //.offset(70.dp, 160.dp)
                     .size(30.dp)
+                    .constrainAs(rightButton) {
+                        top.linkTo(parent.top)
+                        bottom.linkTo(parent.bottom)
+                        end.linkTo(parent.end, margin = 5.dp)
+                    }
             ) {
                 //Text("On")
                 Icon(
@@ -481,6 +493,9 @@ fun Map(navController: NavHostController) {
                     modifier = Modifier.size(15.dp)
                 )
             }
+
         }
+
+
     }
 }
