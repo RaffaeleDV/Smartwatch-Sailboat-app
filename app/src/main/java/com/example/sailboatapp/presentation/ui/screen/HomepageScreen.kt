@@ -110,7 +110,6 @@ fun Homepage(navController: NavHostController) {
         }
     }
 
-
     val maxPages = 3
     val selectedPage by remember { mutableIntStateOf(1) }
     var finalValue by remember { mutableIntStateOf(0) }

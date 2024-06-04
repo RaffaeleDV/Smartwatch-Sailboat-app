@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,6 +42,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.gson.Gson
+import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
@@ -48,12 +50,51 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlin.math.asin
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
+
+fun getTWA(windDirection: Double, shipDirection: Double): Double {
+    var relativeWindDirection = windDirection - shipDirection
+    println("relativeWindDirection: $relativeWindDirection")
+    //Normalize the angle
+    if(relativeWindDirection < 0){
+        relativeWindDirection += 360.0
+    }else if(relativeWindDirection > 360){
+        relativeWindDirection -= 360.0
+    }
+    println("twa pre adjust: $relativeWindDirection")
+    //Adjuste the range
+    if(relativeWindDirection > 180){
+        relativeWindDirection = 360.0 - relativeWindDirection
+    }
+    return relativeWindDirection;
+}
+
+fun angleBetweenPoints(
+    fromLatitude: String, fromLongitude: String, toLatitude: String, toLongitude: String
+): Double {
+    val x = toLatitude.toDouble() - fromLatitude.toDouble()
+    val y = toLongitude.toDouble() - fromLongitude.toDouble()
+
+    var angle = atan2(y, x)
+    angle = Math.toDegrees(angle)
+
+    // Assicuriamoci che l'angolo sia positivo
+    if (angle < 0) {
+        angle += 360
+    }
+    // Aggiungiamo l'offset per orientare correttamente l'angolo
+    val orientamento = 90 // Nord è 90 gradi
+    var angleDef = (angle - orientamento) % 360
+    if (angleDef < 0) {
+        angleDef += 360
+    }
+    return angleDef
+}
+
 
 fun getDistanceBetweenPoints(
     latitude1: String, longitude1: String, latitude2: String, longitude2: String, unit: String
@@ -61,14 +102,14 @@ fun getDistanceBetweenPoints(
     //println("2input data= "+latitude1+" "+longitude1+ " "+latitude2+" "+longitude2)
     val r = 6371.0 // Radius of the Earth in kilometers
     val latDistance = Math.toRadians(latitude1.toDouble() - latitude2.toDouble())
-    var lonDistance = Math.toRadians(longitude1.toDouble() - longitude2.toDouble())
+    val lonDistance = Math.toRadians(longitude1.toDouble() - longitude2.toDouble())
     val a =
         sin(latDistance / 2) * sin(latDistance / 2) + cos(Math.toRadians(latitude1.toDouble())) * cos(
             Math.toRadians(latitude2.toDouble())
         ) * sin(lonDistance / 2) * sin(lonDistance / 2)
     val c = asin(sqrt(a))
 
-    if (unit.equals("kilometers")) {
+    if (unit == "kilometers") {
         return 2 * r * c
     }
     return -1.0
@@ -113,28 +154,31 @@ fun Map(navController: NavHostController) {
     //val ok = getDistanceBetweenPointsMeters("45.4641943", "9.1896346", "40.8358846", "14.2487679")
     //println("Napoli milano: " + ok)
     var shipPosition by remember { mutableStateOf(LatLng(0.0, 0.0)) }
+    var shipDirection by remember { mutableDoubleStateOf(0.0) }
     var destinationPosition by remember { mutableStateOf(LatLng(0.0, 0.0)) }
-    var destinationLine = ArrayList<LatLng>()
+    var destinationDirection by remember { mutableDoubleStateOf(0.0) }
+    val destinationLine = ArrayList<LatLng>()
     destinationLine.add(shipPosition)
     destinationLine.add(destinationPosition)
+
+    var windDirection by remember { mutableDoubleStateOf(0.0) }
+    var windSpeed by remember { mutableDoubleStateOf(0.0) }
+    var speedOverGround by remember { mutableDoubleStateOf(0.0) }
+    var courseOverGround by remember { mutableDoubleStateOf(0.0) }
+    var trueWindAngle by remember { mutableDoubleStateOf(0.0) }
 
     var anchorVisibility by remember { mutableStateOf(false) }
     var destinationPositionVisibility by remember { mutableStateOf(false) }
     var destinationLineVisibility by remember { mutableStateOf(false) }
-    var mapVisibility by remember { mutableStateOf(true) }
+    var directionButtonVisibility by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
 
     var colorAnchor by remember { mutableLongStateOf(orange) }
 
-    val cameraZoom = 5f
-    var cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(shipPosition, cameraZoom)
-    }
-
-    var connectionState : ConnectionState by remember { mutableStateOf(ConnectionState.Loading) }
+    var connectionState: ConnectionState by remember { mutableStateOf(ConnectionState.Loading) }
 
     val localViewModel: LocalViewModel = viewModel()
-    val remoteViewModel : RemoteViewModel = viewModel()
+    val remoteViewModel: RemoteViewModel = viewModel()
 
     var anchorLocal: Anchor = Anchor("0.0", "0.0", "-1", "")
     var anchorRemote = ""
@@ -153,7 +197,6 @@ fun Map(navController: NavHostController) {
             println("Result set anchor: $result")
         }
     }
-
 
     //Anchor Local
     val getAnchorLocalUiState: GetAnchorLocalUiState = localViewModel.getAnchorUiState
@@ -232,9 +275,8 @@ fun Map(navController: NavHostController) {
         //println(ship_position.toString())
     }
     //nmeaData local
-    var nmeaData = localViewModel.data.collectAsState()
+    val nmeaData = localViewModel.data.collectAsState()
     var nmeaDataRemote = HashMap<String, String>()
-
 
     if (!checkLocalConnection()) {
         //NmeaData remote
@@ -252,21 +294,45 @@ fun Map(navController: NavHostController) {
         }
     }
 
-    //Ship Position
+    val cameraZoom = 5f
+    println("reset camera init: $shipPosition")
+    var cameraPositionState by remember {
+        mutableStateOf(
+            CameraPositionState(
+                position = CameraPosition.fromLatLngZoom(shipPosition, cameraZoom)
+            )
+        )
+    }
+
+    //Nmea data
     if (nmeaData.value["latitude"].isNullOrEmpty() && nmeaData.value["longitude"].isNullOrEmpty()) {
-        if (nmeaDataRemote["latitude"].isNullOrEmpty() && nmeaData.value["longitude"].isNullOrEmpty()) {
+        if (nmeaDataRemote["latitude"].isNullOrEmpty() || nmeaDataRemote["longitude"].isNullOrEmpty() || nmeaDataRemote["longitude"] == "0.0") {
             shipPosition
         } else {
-            println("Ship position remote")
+            println("Ship position & NMEAdata remote")
             shipPosition = LatLng(
                 nmeaDataRemote["latitude"]!!.toDouble(), nmeaDataRemote["longitude"]!!.toDouble()
             )
-            cameraPositionState = rememberCameraPositionState {
-                position = CameraPosition.fromLatLngZoom(shipPosition, cameraZoom)
+            shipDirection = nmeaDataRemote["shipDirection"]!!.toDouble()
+
+            windDirection = nmeaDataRemote["windDirection"]!!.toDouble()
+            windSpeed = nmeaDataRemote["windSpeed"]!!.toDouble()
+            courseOverGround = nmeaDataRemote["courseOverGround"]!!.toDouble()
+            speedOverGround = nmeaDataRemote["speedOverGround"]!!.toDouble()
+
+            if (shipPosition.latitude != 0.0) {
+                println("reset camera remote: $shipPosition")
+                cameraPositionState.move(
+                    CameraUpdateFactory.newCameraPosition(
+                        CameraPosition.fromLatLngZoom(
+                            shipPosition, cameraZoom
+                        )
+                    )
+                )
             }
             println("Ancora remota: " + anchorRemoteObj.latitude + " " + anchorRemoteObj.longitude + " Ship: " + shipPosition.toString())
-            println("Anchor is distanced "+
-                checkAnchorDistance(
+            println(
+                "Anchor is distanced " + checkAnchorDistance(
                     LatLng(
                         anchorRemoteObj.latitude.toDouble(), anchorRemoteObj.longitude.toDouble()
                     ), shipPosition
@@ -276,12 +342,9 @@ fun Map(navController: NavHostController) {
                     LatLng(
                         anchorRemoteObj.latitude.toDouble(), anchorRemoteObj.longitude.toDouble()
                     ), shipPosition
-                )
+                ) && anchorRemoteObj.anchored == "1"
             ) {
-                val context = LocalContext.current/*
-                var v = context.getSystemService(Vibrator::class.java) as Vibrator
-                v.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK))
-                */
+                val context = LocalContext.current
                 val mp: MediaPlayer = MediaPlayer.create(context, R.raw.notification)
                 mp.setOnCompletionListener {
                     it.release()
@@ -290,19 +353,29 @@ fun Map(navController: NavHostController) {
             }
         }
     } else {
-        println("Ship position local")
+        println("Ship & NMEAdata local")
         if (nmeaData.value["latitude"]!! == "0.0") {
             shipPosition
         } else {
             shipPosition = LatLng(
                 nmeaData.value["latitude"]!!.toDouble(), nmeaData.value["longitude"]!!.toDouble()
             )
-            cameraPositionState = rememberCameraPositionState {
-                position = CameraPosition.fromLatLngZoom(shipPosition, cameraZoom)
+            shipDirection = nmeaData.value["shipDirection"]!!.toDouble()
+
+            windDirection = nmeaData.value["windDirection"]!!.toDouble()
+            windSpeed = nmeaData.value["windSpeed"]!!.toDouble()
+            courseOverGround = nmeaData.value["courseOverGround"]!!.toDouble()
+            speedOverGround = nmeaData.value["shipSpeed"]!!.toDouble()
+
+            if (shipPosition.latitude != 0.0) {
+                println("reset camera local: $shipPosition")
+                cameraPositionState = rememberCameraPositionState {
+                    position = CameraPosition.fromLatLngZoom(shipPosition, cameraZoom)
+                }
             }
-            println("Ancora remota: " +anchorLocal.latitude + " " + anchorLocal.longitude + " Ship: " + shipPosition.toString())
-            println("Anchor is distanced "+
-                checkAnchorDistance(
+            println("Ancora remota: " + anchorLocal.latitude + " " + anchorLocal.longitude + " Ship: " + shipPosition.toString())
+            println(
+                "Anchor is distanced " + checkAnchorDistance(
                     LatLng(
                         anchorLocal.latitude.toDouble(), anchorLocal.longitude.toDouble()
                     ), shipPosition
@@ -312,12 +385,9 @@ fun Map(navController: NavHostController) {
                     LatLng(
                         anchorLocal.latitude.toDouble(), anchorLocal.longitude.toDouble()
                     ), shipPosition
-                )
+                ) && anchorLocal.anchored == "1"
             ) {
-                val context = LocalContext.current/*
-                var v = context.getSystemService(Vibrator::class.java) as Vibrator
-                v.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK))
-                */
+                val context = LocalContext.current
                 val mp: MediaPlayer = MediaPlayer.create(context, R.raw.notification)
                 mp.setOnCompletionListener {
                     it.release()
@@ -327,6 +397,7 @@ fun Map(navController: NavHostController) {
         }
         //println(ship_position.toString())
     }
+    trueWindAngle = getTWA(windDirection, shipDirection)
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -339,13 +410,13 @@ fun Map(navController: NavHostController) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                item { Text(text = "Rotta: ") }
+                item { Text(text = "Rotta: " + String.format("%.2f", destinationDirection)) }
                 item { Spacer(modifier = Modifier.height(10.dp)) }
-                item { Text(text = "TWS:") }
-                item { Text(text = "TWA:") }
-                item { Text(text = "COG:") }
-                item { Text(text = "SOG:") }
-                item { Text(text = "Wind direction:") }
+                item { Text(text = "TWS: $windSpeed") }
+                item { Text(text = "TWA: " + String.format("%.2f", trueWindAngle)) }
+                item { Text(text = "COG: $courseOverGround") }
+                item { Text(text = "SOG: $speedOverGround") }
+                item { Text(text = "Wind direction: $windDirection") }
                 item { Spacer(modifier = Modifier.height(10.dp)) }
                 item { Text(text = "Sugg. Route:") }
                 item { Text(text = "Sugg. sail conf.:") }
@@ -382,11 +453,21 @@ fun Map(navController: NavHostController) {
             onMapLongClick = {
                 destinationPositionVisibility = true
                 destinationLineVisibility = true
+                directionButtonVisibility = true
                 destinationPosition = it
+                destinationDirection = angleBetweenPoints(
+                    destinationPosition.latitude.toString(),
+                    destinationPosition.longitude.toString(),
+                    shipPosition.latitude.toString(),
+                    shipPosition.longitude.toString()
+                )
+                println(
+                    "Angolo destinazione: $destinationDirection"
+                )
             }) {
             Marker(
                 state = MarkerState(position = shipPosition),
-                rotation = 90f,
+                rotation = shipDirection.toFloat(),
                 anchor = Offset(0.5f, 0.5f),
                 alpha = 10F,
                 icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_action_ship_marker),
@@ -430,17 +511,27 @@ fun Map(navController: NavHostController) {
                     anchorVisibility = !anchorVisibility
                     if (colorAnchor == orange) colorAnchor = red
                     else colorAnchor = orange
-                    if(connectionState == ConnectionState.Local){
-                        println("send local anchor: $anchorLocal")
-                        localViewModel.setAnchor(shipPosition.latitude.toString(),shipPosition.longitude.toString(),if(anchorLocal.anchored == "1") "0" else "1")
-                        if(anchorLocal.anchored == "1")  anchorLocal.anchored ="0" else anchorLocal.anchored = "1"
-                    }else{
-                        if(anchorRemoteObj.anchored == "1")  anchorRemoteObj.anchored ="0" else anchorRemoteObj.anchored = "1"
-                        anchorRemoteObj.latitude = shipPosition.latitude.toString()
-                        anchorRemoteObj.longitude = shipPosition.longitude.toString()
-                        val body = Gson().toJson(anchorRemoteObj)
-                        println("send remote anchor $body")
-                        println("result: "+remoteViewModel.setAnchor(body))
+                    if (connectionState == ConnectionState.Local) {
+                        if (anchorLocal.latitude != null && anchorLocal.latitude != "0.0") {
+                            println("send local anchor: $anchorLocal")
+                            localViewModel.setAnchor(
+                                shipPosition.latitude.toString(),
+                                shipPosition.longitude.toString(),
+                                if (anchorLocal.anchored == "1") "0" else "1"
+                            )
+                            if (anchorLocal.anchored == "1") anchorLocal.anchored =
+                                "0" else anchorLocal.anchored = "1"
+                        }
+                    } else {
+                        if (anchorRemoteObj.latitude != null && anchorRemoteObj.latitude != "0.0") {
+                            if (anchorRemoteObj.anchored == "1") anchorRemoteObj.anchored =
+                                "0" else anchorRemoteObj.anchored = "1"
+                            anchorRemoteObj.latitude = shipPosition.latitude.toString()
+                            anchorRemoteObj.longitude = shipPosition.longitude.toString()
+                            val body = Gson().toJson(anchorRemoteObj)
+                            println("send remote anchor $body")
+                            println("result: " + remoteViewModel.setAnchor(body))
+                        }
 
                     }
                     //navController.navigate("off")
@@ -464,7 +555,7 @@ fun Map(navController: NavHostController) {
             }
             Button(//Direction Button
                 onClick = {
-                    if (connectionState == ConnectionState.Local) {
+                    if (connectionState == ConnectionState.Local && directionButtonVisibility) {
                         showDialog = true
                     }
                 }, colors = ButtonDefaults.buttonColors(
@@ -474,7 +565,7 @@ fun Map(navController: NavHostController) {
                     //.absoluteOffset { IntOffset(160, 320) }
                     //.offset(70.dp, 160.dp)
                     .size(30.dp)
-                    .alpha(if (connectionState == ConnectionState.Local) 1f else 0f)
+                    .alpha(if (connectionState == ConnectionState.Local && directionButtonVisibility) 1f else 0f)
                     .constrainAs(bottomButton) {
                         bottom.linkTo(parent.bottom, margin = 5.dp)
                         start.linkTo(parent.start)
@@ -487,15 +578,19 @@ fun Map(navController: NavHostController) {
                     modifier = Modifier.size(15.dp)
                 )
             }
-            Button(//Reset position
+            Button(
+//Reset position
                 onClick = {
-                    cameraPositionState.move(
-                        CameraUpdateFactory.newCameraPosition(
-                            CameraPosition.fromLatLngZoom(
-                                shipPosition, cameraZoom
+                    if (shipPosition.latitude != 0.0) {
+                        println("reset camera button: $shipPosition")
+                        cameraPositionState.move(
+                            CameraUpdateFactory.newCameraPosition(
+                                CameraPosition.fromLatLngZoom(
+                                    shipPosition, cameraZoom
+                                )
                             )
                         )
-                    )
+                    }
                 },
                 colors = ButtonDefaults.buttonColors(
                     backgroundColor = Color(orange), // Background color

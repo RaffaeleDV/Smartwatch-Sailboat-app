@@ -12,8 +12,8 @@ fun windSpeedKnots(value: Float, unit: String): Double {
 
 fun readNMEA(data: String): HashMap<String, String> {
 
-    var hm = HashMap<String, String>()
-    var sentenze = data.split('\n')
+    val hm = HashMap<String, String>()
+    val sentenze = data.split('\n')
 
     sentenze.forEachIndexed { index, s ->
         run {
@@ -22,7 +22,7 @@ fun readNMEA(data: String): HashMap<String, String> {
             if (!s.isNullOrEmpty()) {
                 //println(s.toString())
                 if (s.isNotEmpty() && !s.equals("") && !s.equals(" ") && !s.isBlank()) {
-                    var row = s.split(',')
+                    val row = s.split(',')
 
                     //println("Virgola: "+row[0])
 
@@ -30,7 +30,7 @@ fun readNMEA(data: String): HashMap<String, String> {
                     if (row[0].isNotEmpty()) {
                         when (row[0].substring(3)) {
                             "GLL" -> {
-                                println("GLL")
+                                //println("GLL")
                                 val lat = row[1]
                                 val latDegree = lat.substring(0, 2)
                                 val latMinutes = lat.substring(2, 8)
@@ -55,40 +55,56 @@ fun readNMEA(data: String): HashMap<String, String> {
                                     longDecimal = "-" + longDecimal
                                 }
 
-                                hm.put("latitude", latDecimal)
-                                hm.put("longitude", longDecimal)
+                                hm["latitude"] = latDecimal
+                                hm["longitude"] = longDecimal
                                 //println(latDecimal + " " + longDecimal)
 
                             }
 
                             "MWV" -> {
-                                var windAngle = row[1]
-                                var windSpeed =
+                                val windAngle = row[1]
+                                val windSpeed =
                                     String.format("%.2f", windSpeedKnots(row[3].toFloat(), row[4]))
 
-                                hm.put("windAngle", windAngle)
-                                hm.put("windSpeed", windSpeed)
+                                hm["windAngle"] = windAngle
+                                hm["windSpeed"] = windSpeed
 
                             }
 
                             "MAXMWV" -> {
-                                var rafficaAngle = row[1]
-                                var maxWindSpeed = row[2]
+                                val rafficaAngle = row[1]
+                                val maxWindSpeed = row[2]
 
-                                hm.put("maxWindSpeed", maxWindSpeed)
+                                hm["maxWindSpeed"] = maxWindSpeed
+                            }
+
+                            "MWD" -> {
+                                val windDirection = row[1]
+
+                                hm["windDirection"] = windDirection
+
                             }
 
                             "VTG" -> {
-                                var shipSpeed = row[5]
-                                var shipSpeedKm = row[7]
+                                val courseOverGround = row[1]
+                                val shipSpeed = row[5]
+                                val shipSpeedKm = row[7]
 
-                                hm.put("shipSpeed", shipSpeed)
+                                hm["shipSpeed"] = shipSpeed
+                                hm["courseOverGround"] = courseOverGround
+                            }
+
+                            "RMC" -> {
+                                val speedOverGround = row[7]
+
+                                hm["speedOverGround"] = speedOverGround
+
                             }
 
                             "HDT" -> {
-                                var shipDirection = row[1]
+                                val shipDirection = row[1]
 
-                                hm.put("shipDirection", shipDirection)
+                                hm["shipDirection"] = shipDirection
                             }
 
 
@@ -101,15 +117,5 @@ fun readNMEA(data: String): HashMap<String, String> {
 
         }
     }
-
-
-    // data.toa
-
-
-    /*sentence = sentence[2].split("\n")*/
-
-    //println("Sentenza: "+ sentence[0])
-
     return hm
-
 }
