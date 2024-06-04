@@ -66,17 +66,17 @@ dependencies {
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
 
-    implementation ("com.google.maps.android:maps-compose:5.0.1")
+    implementation("com.google.maps.android:maps-compose:5.0.1")
 
     // Optionally, you can include the Compose utils library for Clustering,
     // Street View metadata checks, etc.
-    implementation ("com.google.maps.android:maps-compose-utils:5.0.1")
+    implementation("com.google.maps.android:maps-compose-utils:5.0.1")
 
     // Optionally, you can include the widgets library for ScaleBar, etc.
-    implementation ("com.google.maps.android:maps-compose-widgets:5.0.1")
+    implementation("com.google.maps.android:maps-compose-widgets:5.0.1")
 
 
-    implementation (libs.compose.navigation)
+    implementation(libs.compose.navigation)
 
     // General compose dependencies
     implementation("androidx.activity:activity-compose:1.9.0")
@@ -97,7 +97,7 @@ dependencies {
     implementation("androidx.wear.compose:compose-navigation:1.3.1")
 
     // Retrofit
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
     // Retrofit with Scalar Converter
     implementation("com.squareup.retrofit2:converter-scalars:2.9.0")
     // Retrofit with Kotlin serialization Converter
@@ -105,18 +105,11 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
 
     // Kotlin serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
-    implementation ("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
 
-    implementation ("androidx.constraintlayout:constraintlayout-compose:1.0.1")
-
-
-
-
-
-
-
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
 
 
 }

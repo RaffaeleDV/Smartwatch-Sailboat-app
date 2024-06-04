@@ -1,4 +1,4 @@
-package com.example.mapsok.presentation.theme
+package com.example.sailboatapp.presentation.ui.theme
 
 import androidx.compose.runtime.Composable
 import androidx.wear.compose.material.MaterialTheme

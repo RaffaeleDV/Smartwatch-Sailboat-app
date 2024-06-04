@@ -11,7 +11,7 @@ data class Anchor(
     @SerializedName(value = "longitudine")
     val longitude: String,
     @SerializedName(value = "ancorato")
-    val anchored: String,
+    var anchored: String,
     @SerializedName(value = "tempo")
     val time: String
 

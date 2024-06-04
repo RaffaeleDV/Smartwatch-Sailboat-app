@@ -35,10 +35,9 @@ fun readNMEA(data: String): HashMap<String, String> {
                                 val latDegree = lat.substring(0, 2)
                                 val latMinutes = lat.substring(2, 8)
 
-                                var latDecimal =
-                                    String.format("%.7f",
-                                    (latDegree.toFloat() + (latMinutes.toFloat() / 60))
-                                    )
+                                var latDecimal = String.format(
+                                    "%.7f", (latDegree.toFloat() + (latMinutes.toFloat() / 60))
+                                )
 
                                 if (row[2].equals("S")) {
                                     latDecimal = "-" + latDecimal
@@ -48,10 +47,9 @@ fun readNMEA(data: String): HashMap<String, String> {
                                 val longDegree = long.substring(0, 3)
                                 val longMinutes = long.substring(3, 8)
 
-                                var longDecimal =
-                                    String.format("%.7f",
-                                    (longDegree.toFloat() + (longMinutes.toFloat() / 60))
-                                    )
+                                var longDecimal = String.format(
+                                    "%.7f", (longDegree.toFloat() + (longMinutes.toFloat() / 60))
+                                )
 
                                 if (row[4].equals("W")) {
                                     longDecimal = "-" + longDecimal
@@ -74,8 +72,8 @@ fun readNMEA(data: String): HashMap<String, String> {
                             }
 
                             "MAXMWV" -> {
-                                var rafficaAngle = row[1];
-                                var maxWindSpeed = row[2];
+                                var rafficaAngle = row[1]
+                                var maxWindSpeed = row[2]
 
                                 hm.put("maxWindSpeed", maxWindSpeed)
                             }

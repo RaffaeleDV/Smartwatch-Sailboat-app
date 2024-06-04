@@ -16,11 +16,6 @@ import com.example.sailboatapp.presentation.ui.screen.Map
 
 }*/
 
-@Composable
-fun localConnection() {
-    val localViewModel: LocalViewModel = viewModel()
-}
-
 
 
 @Composable

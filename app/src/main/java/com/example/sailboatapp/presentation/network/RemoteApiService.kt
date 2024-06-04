@@ -1,17 +1,14 @@
 package com.example.sailboatapp.presentation.network
 
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import retrofit2.http.GET
 
-private const val BASE_URL =
-    "https://bruce.altervista.org/"
+private const val BASE_URL = "https://bruce.altervista.org/"
 
-private val retrofit = Retrofit.Builder()
-    .addConverterFactory(ScalarsConverterFactory.create())
-    .baseUrl(BASE_URL)
-    .build()
+private val retrofit =
+    Retrofit.Builder().addConverterFactory(ScalarsConverterFactory.create()).baseUrl(BASE_URL)
+        .build()
 
 interface RemoteApiService {
     @GET("visualizzazione.php")

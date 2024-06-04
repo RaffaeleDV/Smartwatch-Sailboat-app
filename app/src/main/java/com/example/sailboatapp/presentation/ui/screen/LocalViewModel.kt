@@ -27,11 +27,19 @@ sealed interface RafficaUiState {
     object Loading : RafficaUiState
 }
 
-sealed interface AnchorLocalUiState {
-    data class Success(val anchor: Anchor) : AnchorLocalUiState
-    object Error : AnchorLocalUiState
-    object Loading : AnchorLocalUiState
+sealed interface GetAnchorLocalUiState {
+    data class Success(val anchor: Anchor) : GetAnchorLocalUiState
+    object Error : GetAnchorLocalUiState
+    object Loading : GetAnchorLocalUiState
 }
+
+sealed interface SetAnchorLocalUiState {
+    data class Success(val result: Unit) : SetAnchorLocalUiState
+    object Error : SetAnchorLocalUiState
+    object Loading : SetAnchorLocalUiState
+}
+
+
 
 
 class LocalViewModel : ViewModel() {
@@ -40,8 +48,9 @@ class LocalViewModel : ViewModel() {
     val data: StateFlow<HashMap<String, String>> = _data
     var rafficaUiState: RafficaUiState by mutableStateOf(RafficaUiState.Loading)
         private set
-
-    var anchorUiState: AnchorLocalUiState by mutableStateOf(AnchorLocalUiState.Loading)
+    var getAnchorUiState: GetAnchorLocalUiState by mutableStateOf(GetAnchorLocalUiState.Loading)
+        private set
+    var setAnchorUiState: SetAnchorLocalUiState by mutableStateOf(SetAnchorLocalUiState.Loading)
         private set
 
     /**
@@ -85,22 +94,35 @@ class LocalViewModel : ViewModel() {
 
     fun getAnchor() {
         viewModelScope.launch {
-            anchorUiState = try {
+            getAnchorUiState = try {
+                delay(10000)
                 //println("Try raffica")
                 val result = LocalApi.retrofitService.getAnchor()
-
                 //println("Ancora: "+ result)
-                AnchorLocalUiState.Success(
+                GetAnchorLocalUiState.Success(
                     result
                 )
             } catch (e: IOException) {
-                AnchorLocalUiState.Error
+                GetAnchorLocalUiState.Error
+            }
+        }
+    }
+
+    fun setAnchor(latitude : String, longitude : String, anchored : String) {
+        viewModelScope.launch {
+            try {
+                val result = LocalApi.retrofitNmeaForwarderService.setAnchor(latitude, longitude, anchored)
+                println("Ancora set: "+ result)
+                setAnchorUiState = SetAnchorLocalUiState.Success(
+                    result
+                )
+            } catch (e: IOException) {
+                setAnchorUiState = SetAnchorLocalUiState.Error
             }
         }
     }
 
     fun getNmeaLocal() {
-
         val client = OkHttpClient()
         val request = Request.Builder().url("ws://192.168.178.48:8080").get().build()
         val listener = LocalWebSocketListener { bytes ->

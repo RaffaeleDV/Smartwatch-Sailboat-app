@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -53,14 +54,14 @@ fun Polars(navController: NavHostController) {
     }
 
     val listState = rememberScalingLazyListState()
-    var vignetteState by remember {  mutableStateOf(VignettePosition.TopAndBottom) }
+    var vignetteState by remember { mutableStateOf(VignettePosition.TopAndBottom) }
 
     val maxPages = 3
-    var selectedPage by remember { mutableStateOf(0) }
-    var finalValue by remember { mutableStateOf(0) }
+    val selectedPage by remember { mutableIntStateOf(0) }
+    var finalValue by remember { mutableIntStateOf(0) }
 
     val animatedSelectedPage by animateFloatAsState(
-        targetValue = selectedPage.toFloat(),
+        targetValue = selectedPage.toFloat(), label = "",
     ) {
         finalValue = it.toInt()
     }
@@ -76,35 +77,27 @@ fun Polars(navController: NavHostController) {
         }
     }
 
-    var showVignette  by remember {
+    var showVignette by remember {
         mutableStateOf(true)
     }
 
     var showDialog by remember { mutableStateOf(false) }
 
-    Scaffold(
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight(),
-        positionIndicator = {
-            PositionIndicator(
-                scalingLazyListState = listState,
-                modifier = Modifier
-            )
-        },
-        vignette = {
-            if (showVignette) {
-                Vignette(vignettePosition = vignetteState)
-            }
-        },
-        timeText = {
-            TimeText()
-        },
-        pageIndicator = {
-            HorizontalPageIndicator(pageIndicatorState = pageIndicatorState)
+    Scaffold(modifier = Modifier
+        .fillMaxWidth()
+        .fillMaxHeight(), positionIndicator = {
+        PositionIndicator(
+            scalingLazyListState = listState, modifier = Modifier
+        )
+    }, vignette = {
+        if (showVignette) {
+            Vignette(vignettePosition = vignetteState)
         }
-    )
-    {
+    }, timeText = {
+        TimeText()
+    }, pageIndicator = {
+        HorizontalPageIndicator(pageIndicatorState = pageIndicatorState)
+    }) {
         ScalingLazyColumn(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -123,17 +116,15 @@ fun Polars(navController: NavHostController) {
             item {
                 Button(//registra button
                     onClick = {
-                        if(polarRecState){
+                        if (polarRecState) {
                             polarRecState = false
                             polarString = "Inizia registrazione"
-                        }
-                        else{
+                        } else {
                             polarRecState = true
                             polarString = "Termina"
                             showDialog = true
                         }
-                    },
-                    modifier = Modifier
+                    }, modifier = Modifier
                         .height(30.dp)
                         .width(150.dp)
                 ) {
@@ -141,8 +132,7 @@ fun Polars(navController: NavHostController) {
                 }
             }
             item {
-                var textState by remember { mutableStateOf("") }
-                /*BasicTextField(
+                var textState by remember { mutableStateOf("") }/*BasicTextField(
                     modifier = Modifier.fillMaxSize(),
                     value = textState,
                     onValueChange = {textState = it},
@@ -158,40 +148,33 @@ fun Polars(navController: NavHostController) {
                         }
                     }
                 )*/
-                Dialog(
-                    showDialog = showDialog,
-                    onDismissRequest = { showDialog = false}) {
-                    Column (
+                Dialog(showDialog = showDialog, onDismissRequest = { showDialog = false }) {
+                    Column(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(text = "Configurazione vele: ")
                         Spacer(modifier = Modifier.height(10.dp))
-                        BasicTextField(
-                            modifier = Modifier,//.absoluteOffset { IntOffset(50,160) },
+                        BasicTextField(modifier = Modifier,//.absoluteOffset { IntOffset(50,160) },
                             value = textState,
-                            onValueChange = {textState = it},
+                            onValueChange = { textState = it },
                             textStyle = TextStyle.Default,
                             singleLine = true,
-                            decorationBox = {
-                                    innerTextField ->
-                                Row (
+                            decorationBox = { innerTextField ->
+                                Row(
                                     modifier = Modifier
                                         .background(MaterialTheme.colors.primary)
                                         .padding(5.dp)
                                 ) {
                                     innerTextField()
                                 }
-                            }
-                        )
+                            })
                         Spacer(modifier = Modifier.height(20.dp))
                         Button(
                             onClick = {
                                 showDialog = false
-                            },
-                            modifier = Modifier
-                                .size(30.dp)
+                            }, modifier = Modifier.size(30.dp)
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_action_done_icon),
