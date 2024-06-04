@@ -2,7 +2,9 @@ package com.example.sailboatapp.presentation.network
 
 import retrofit2.Retrofit
 import retrofit2.converter.scalars.ScalarsConverterFactory
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.POST
 
 private const val BASE_URL = "https://bruce.altervista.org/"
 
@@ -16,6 +18,9 @@ interface RemoteApiService {
 
     @GET("prendiAncora.php")
     suspend fun getAncora(): String
+
+    @POST("inviaAncora.php")
+    suspend fun setAncora(@Body body: String): String
 }
 
 object RemoteApi {

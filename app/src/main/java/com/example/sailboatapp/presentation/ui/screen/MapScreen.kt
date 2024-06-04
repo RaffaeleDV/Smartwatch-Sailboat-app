@@ -40,6 +40,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.gson.Gson
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
@@ -47,6 +48,8 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.math.asin
 import kotlin.math.cos
 import kotlin.math.sin
@@ -96,7 +99,7 @@ fun checkAnchorDistance(anchorLatLng: LatLng, shipLatLng: LatLng): Boolean {
         "kilometers"
     )
     //val b = BigDecimal(distance).toPlainString()
-    //println("Anchor distance: $distance")
+    println("Anchor distance: $distance")
     if (distance > anchorDistanceLimitMeters) {
         return true
     }
@@ -124,14 +127,14 @@ fun Map(navController: NavHostController) {
     var colorAnchor by remember { mutableLongStateOf(orange) }
 
     val cameraZoom = 5f
-
     var cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(shipPosition, cameraZoom)
     }
 
-    var connectionState by remember { mutableStateOf("Local") }
+    var connectionState : ConnectionState by remember { mutableStateOf(ConnectionState.Loading) }
 
     val localViewModel: LocalViewModel = viewModel()
+    val remoteViewModel : RemoteViewModel = viewModel()
 
     var anchorLocal: Anchor = Anchor("0.0", "0.0", "-1", "")
     var anchorRemote = ""
@@ -163,38 +166,39 @@ fun Map(navController: NavHostController) {
             println("Success: Local connection get anchor")
             anchorLocal = (localViewModel.getAnchorUiState as GetAnchorLocalUiState.Success).anchor
             println("Ancora locale: $anchorLocal")
+            connectionState = ConnectionState.Local
         }
     }
 
     if (!checkLocalConnection()) {
-        val remoteViewModel: RemoteViewModel = viewModel()
         //Anchor Remote
-        val anchorRemoteUiState: AnchorRemoteUiState = remoteViewModel.anchorRemoteUiState
-        connectionState = "Remote"
+        val anchorRemoteUiState: GetAnchorRemoteUiState = remoteViewModel.getAnchorRemoteUiState
+        connectionState = ConnectionState.Remote
         when (anchorRemoteUiState) {
-            is AnchorRemoteUiState.Error -> {
+            is GetAnchorRemoteUiState.Error -> {
                 println("Error remote anchor")
             }
 
-            is AnchorRemoteUiState.Loading -> {
+            is GetAnchorRemoteUiState.Loading -> {
                 println("Loading remote anchor")
             }
 
-            is AnchorRemoteUiState.Success -> {
+            is GetAnchorRemoteUiState.Success -> {
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
                 println("Success: Remote connection anchor")
                 anchorRemote =
-                    (remoteViewModel.anchorRemoteUiState as AnchorRemoteUiState.Success).anchor
-                //println(anchorRemote)
+                    (remoteViewModel.getAnchorRemoteUiState as GetAnchorRemoteUiState.Success).anchor
+                println("Anchor remote: $anchorRemote")
                 val list = anchorRemote.split(" ")
-                //println(list.toString())
-                //println("." + list[2] + ".")
+                println(list.toString())
+                println("." + list[2] + ".")
                 anchorRemoteObj = Anchor(
                     latitude = String.format("%.7f", list[0].toDouble()),
                     longitude = String.format("%.7f", list[1].toDouble()),
                     anchored = list[2],
                     time = list[3]
                 )
+                println("Anchor remoteObj: $anchorRemoteObj")
             }
         }
     }
@@ -230,13 +234,12 @@ fun Map(navController: NavHostController) {
     //nmeaData local
     var nmeaData = localViewModel.data.collectAsState()
     var nmeaDataRemote = HashMap<String, String>()
-    connectionState = "Local"
+
 
     if (!checkLocalConnection()) {
         //NmeaData remote
-        val remoteViewModel: RemoteViewModel = viewModel()
         val remoteUiState: RemoteUiState = remoteViewModel.remoteUiState
-        connectionState = "Remote"
+        connectionState = ConnectionState.Remote
         when (remoteUiState) {
             is RemoteUiState.Error -> println("Error remote connection")
             is RemoteUiState.Loading -> println("Loading remote connection")
@@ -261,7 +264,7 @@ fun Map(navController: NavHostController) {
             cameraPositionState = rememberCameraPositionState {
                 position = CameraPosition.fromLatLngZoom(shipPosition, cameraZoom)
             }
-            println(anchorRemoteObj.latitude + " " + anchorRemoteObj.longitude + "  " + shipPosition.toString())
+            println("Ancora remota: " + anchorRemoteObj.latitude + " " + anchorRemoteObj.longitude + " Ship: " + shipPosition.toString())
             println("Anchor is distanced "+
                 checkAnchorDistance(
                     LatLng(
@@ -269,6 +272,22 @@ fun Map(navController: NavHostController) {
                     ), shipPosition
                 )
             )
+            if (checkAnchorDistance(
+                    LatLng(
+                        anchorRemoteObj.latitude.toDouble(), anchorRemoteObj.longitude.toDouble()
+                    ), shipPosition
+                )
+            ) {
+                val context = LocalContext.current/*
+                var v = context.getSystemService(Vibrator::class.java) as Vibrator
+                v.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK))
+                */
+                val mp: MediaPlayer = MediaPlayer.create(context, R.raw.notification)
+                mp.setOnCompletionListener {
+                    it.release()
+                }
+                mp.start()
+            }
         }
     } else {
         println("Ship position local")
@@ -281,7 +300,7 @@ fun Map(navController: NavHostController) {
             cameraPositionState = rememberCameraPositionState {
                 position = CameraPosition.fromLatLngZoom(shipPosition, cameraZoom)
             }
-            println(anchorLocal.latitude + " " + anchorLocal.longitude + "  " + shipPosition.toString())
+            println("Ancora remota: " +anchorLocal.latitude + " " + anchorLocal.longitude + " Ship: " + shipPosition.toString())
             println("Anchor is distanced "+
                 checkAnchorDistance(
                     LatLng(
@@ -303,7 +322,7 @@ fun Map(navController: NavHostController) {
                 mp.setOnCompletionListener {
                     it.release()
                 }
-                //mp.start()
+                mp.start()
             }
         }
         //println(ship_position.toString())
@@ -411,14 +430,18 @@ fun Map(navController: NavHostController) {
                     anchorVisibility = !anchorVisibility
                     if (colorAnchor == orange) colorAnchor = red
                     else colorAnchor = orange
-                    if(connectionState == "Local"){
+                    if(connectionState == ConnectionState.Local){
                         println("send local anchor: $anchorLocal")
-                        localViewModel.setAnchor(anchorLocal.latitude,anchorLocal.longitude,if(anchorLocal.anchored == "1") "0" else "1")
+                        localViewModel.setAnchor(shipPosition.latitude.toString(),shipPosition.longitude.toString(),if(anchorLocal.anchored == "1") "0" else "1")
                         if(anchorLocal.anchored == "1")  anchorLocal.anchored ="0" else anchorLocal.anchored = "1"
                     }else{
-                        println("send remote anchor")
-                        localViewModel.setAnchor(anchorRemoteObj.latitude,anchorRemoteObj.longitude,if(anchorRemoteObj.anchored == "1") "0" else "1")
                         if(anchorRemoteObj.anchored == "1")  anchorRemoteObj.anchored ="0" else anchorRemoteObj.anchored = "1"
+                        anchorRemoteObj.latitude = shipPosition.latitude.toString()
+                        anchorRemoteObj.longitude = shipPosition.longitude.toString()
+                        val body = Gson().toJson(anchorRemoteObj)
+                        println("send remote anchor $body")
+                        println("result: "+remoteViewModel.setAnchor(body))
+
                     }
                     //navController.navigate("off")
                 }, colors = ButtonDefaults.buttonColors(
@@ -441,7 +464,7 @@ fun Map(navController: NavHostController) {
             }
             Button(//Direction Button
                 onClick = {
-                    if (connectionState == "Local") {
+                    if (connectionState == ConnectionState.Local) {
                         showDialog = true
                     }
                 }, colors = ButtonDefaults.buttonColors(
@@ -451,7 +474,7 @@ fun Map(navController: NavHostController) {
                     //.absoluteOffset { IntOffset(160, 320) }
                     //.offset(70.dp, 160.dp)
                     .size(30.dp)
-                    .alpha(if (connectionState == "Local") 1f else 0f)
+                    .alpha(if (connectionState == ConnectionState.Local) 1f else 0f)
                     .constrainAs(bottomButton) {
                         bottom.linkTo(parent.bottom, margin = 5.dp)
                         start.linkTo(parent.start)

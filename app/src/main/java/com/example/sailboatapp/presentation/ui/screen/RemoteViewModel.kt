@@ -16,17 +16,25 @@ sealed interface RemoteUiState {
     object Loading : RemoteUiState
 }
 
-sealed interface AnchorRemoteUiState {
-    data class Success(val anchor: String) : AnchorRemoteUiState
-    object Error : AnchorRemoteUiState
-    object Loading : AnchorRemoteUiState
+sealed interface GetAnchorRemoteUiState {
+    data class Success(val anchor: String) : GetAnchorRemoteUiState
+    object Error : GetAnchorRemoteUiState
+    object Loading : GetAnchorRemoteUiState
+}
+
+sealed interface SetAnchorRemoteUiState {
+    data class Success(val anchor: String) : SetAnchorRemoteUiState
+    object Error : SetAnchorRemoteUiState
+    object Loading : SetAnchorRemoteUiState
 }
 
 class RemoteViewModel : ViewModel() {
     /** The mutable State that stores the status of the most recent request */
     var remoteUiState: RemoteUiState by mutableStateOf(RemoteUiState.Loading)
         private set
-    var anchorRemoteUiState: AnchorRemoteUiState by mutableStateOf(AnchorRemoteUiState.Loading)
+    var getAnchorRemoteUiState: GetAnchorRemoteUiState by mutableStateOf(GetAnchorRemoteUiState.Loading)
+        private set
+    var setAnchorRemoteUiState: SetAnchorRemoteUiState by mutableStateOf(SetAnchorRemoteUiState.Loading)
         private set
 
     /**
@@ -67,14 +75,28 @@ class RemoteViewModel : ViewModel() {
 
     fun getAnchor() {
         viewModelScope.launch {
-            anchorRemoteUiState = try {
+            getAnchorRemoteUiState = try {
                 //("Try")
                 val result = RemoteApi.retrofitService.getAncora()
-                AnchorRemoteUiState.Success(
+                GetAnchorRemoteUiState.Success(
                     result
                 )
             } catch (e: IOException) {
-                AnchorRemoteUiState.Error
+                GetAnchorRemoteUiState.Error
+            }
+        }
+    }
+
+    fun setAnchor(body: String) {
+        viewModelScope.launch {
+            setAnchorRemoteUiState = try {
+                //("Try")
+                val result = RemoteApi.retrofitService.setAncora(body)
+                SetAnchorRemoteUiState.Success(
+                    result
+                )
+            } catch (e: IOException) {
+                SetAnchorRemoteUiState.Error
             }
         }
     }

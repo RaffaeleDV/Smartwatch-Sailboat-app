@@ -64,6 +64,10 @@ fun setLocalConnection(state: Boolean) {
     locCon.setConnectionState(state)
 }
 
+enum class ConnectionState{
+    Local, Remote, Loading
+}
+
 @Composable
 fun Homepage(navController: NavHostController) {
 
@@ -71,7 +75,7 @@ fun Homepage(navController: NavHostController) {
     var lastMaxWindSpeed = "0.0"
     var lastShipDirection = "0.0"
 
-    var connectionState by remember { mutableStateOf("") }
+    var connectionState : ConnectionState by remember { mutableStateOf(ConnectionState.Loading) }
 
     val localViewModel: LocalViewModel = viewModel()
 
@@ -89,11 +93,11 @@ fun Homepage(navController: NavHostController) {
 
     var nmeaData = localViewModel.data.collectAsState()
     var nmeaDataRemote = HashMap<String, String>()
-    connectionState = "Local"
+    connectionState = ConnectionState.Local
     if (!checkLocalConnection()) {
         val remoteViewModel: RemoteViewModel = viewModel()
         val remoteUiState: RemoteUiState = remoteViewModel.remoteUiState
-        connectionState = "Remote"
+        connectionState = ConnectionState.Remote
         when (remoteUiState) {
             is RemoteUiState.Error -> println("Error remote connection")
             is RemoteUiState.Loading -> println("Loading remote connection")
@@ -166,7 +170,7 @@ fun Homepage(navController: NavHostController) {
                     textAlign = TextAlign.Center,
                     color = Color.Red,
                     fontSize = 8.sp,
-                    text = connectionState
+                    text = connectionState.toString()
                 )
             }
             item {
@@ -216,7 +220,7 @@ fun Homepage(navController: NavHostController) {
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.secondary,
                     fontSize = 15.sp,
-                    text = (if (connectionState == "Remote") {
+                    text = (if (connectionState == ConnectionState.Remote) {
 
                         if (nmeaDataRemote["maxWindSpeed"].isNullOrEmpty()) lastShipDirection
                         else nmeaDataRemote["maxWindSpeed"]!!

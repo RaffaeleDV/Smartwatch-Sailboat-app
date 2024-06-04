@@ -7,9 +7,9 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Anchor(
     @SerializedName(value = "latitudine")
-    val latitude: String,
+    var latitude: String,
     @SerializedName(value = "longitudine")
-    val longitude: String,
+    var longitude: String,
     @SerializedName(value = "ancorato")
     var anchored: String,
     @SerializedName(value = "tempo")
