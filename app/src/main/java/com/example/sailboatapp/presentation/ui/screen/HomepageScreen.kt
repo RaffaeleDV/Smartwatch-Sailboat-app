@@ -42,6 +42,8 @@ import androidx.wear.compose.material.VignettePosition
 import com.example.sailboatapp.R
 import com.example.sailboatapp.presentation.data.readNMEA
 import com.example.sailboatapp.presentation.network.Raffica
+import com.example.sailboatapp.presentation.ui.DEGREE_SYMBOL
+import com.example.sailboatapp.presentation.ui.KNOT_SYMBOL
 
 class LocalConnection {
     var localConnectionState: Boolean = false
@@ -190,16 +192,16 @@ fun Homepage(navController: NavHostController) {
                     fontSize = 15.sp,
                     text = (if (nmeaData.value["windSpeed"] == null) {
                         if (nmeaDataRemote["windSpeed"].isNullOrEmpty()) {
-                            lastVelVento
+                            "$lastVelVento $KNOT_SYMBOL"
                         } else {
-                            nmeaDataRemote["windSpeed"]!!
+                            "${nmeaDataRemote["windSpeed"]!!} $KNOT_SYMBOL"
                         }
                     } else {
                         if (nmeaData.value["windSpeed"]!! == "0.0") {
-                            lastVelVento
+                            "$lastVelVento $KNOT_SYMBOL"
                         } else {
                             lastVelVento = nmeaData.value["windSpeed"]!!
-                            lastVelVento
+                            "$lastVelVento $KNOT_SYMBOL"
                         }
 
                     })
@@ -221,14 +223,18 @@ fun Homepage(navController: NavHostController) {
                     fontSize = 15.sp,
                     text = (if (connectionState == ConnectionState.Remote) {
 
-                        if (nmeaDataRemote["maxWindSpeed"].isNullOrEmpty()) lastShipDirection
-                        else nmeaDataRemote["maxWindSpeed"]!!
+                        if (nmeaDataRemote["maxWindSpeed"].isNullOrEmpty()) {
+                            "$lastMaxWindSpeed $KNOT_SYMBOL"
+                        }
+                        else {
+                            "${nmeaDataRemote["maxWindSpeed"]!!} $KNOT_SYMBOL"
+                        }
                     } else {
                         if (raffica.velVento == "0.0") {
-                            lastMaxWindSpeed
+                            "$lastMaxWindSpeed $KNOT_SYMBOL"
                         } else {
                             lastMaxWindSpeed = raffica.velVento
-                            lastMaxWindSpeed
+                            "$lastMaxWindSpeed $KNOT_SYMBOL"
                         }
 
                     })
@@ -250,14 +256,18 @@ fun Homepage(navController: NavHostController) {
                     fontSize = 15.sp,
                     text = (if (nmeaData.value["shipDirection"] == null) {
 
-                        if (nmeaDataRemote["shipDirection"].isNullOrEmpty()) lastShipDirection
-                        else nmeaDataRemote["shipDirection"]!!
+                        if (nmeaDataRemote["shipDirection"].isNullOrEmpty()) {
+                            "$lastShipDirection $DEGREE_SYMBOL"
+                        }
+                        else {
+                            "${nmeaDataRemote["shipDirection"]!!} $DEGREE_SYMBOL"
+                        }
                     } else {
                         if (nmeaData.value["shipDirection"]!! == "0.0") {
-                            lastShipDirection
+                            "$lastShipDirection $DEGREE_SYMBOL"
                         } else {
-                            lastShipDirection = nmeaData.value.get("shipDirection")!!
-                            lastShipDirection
+                            lastShipDirection = nmeaData.value["shipDirection"]!!
+                            "$lastShipDirection $DEGREE_SYMBOL"
                         }
 
                     })

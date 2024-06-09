@@ -11,6 +11,8 @@ import com.example.sailboatapp.presentation.ui.screen.Homepage
 import com.example.sailboatapp.presentation.ui.screen.Polars
 import com.example.sailboatapp.presentation.ui.screen.Map
 
+const val DEGREE_SYMBOL = "\u00B0"
+const val KNOT_SYMBOL = "Kn"
 
 @Composable
 fun SailboatApp() {

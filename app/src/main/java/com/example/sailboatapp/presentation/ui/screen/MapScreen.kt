@@ -37,11 +37,14 @@ import com.example.sailboatapp.presentation.data.readNMEA
 import com.example.sailboatapp.presentation.network.Anchor
 import com.example.sailboatapp.presentation.orange
 import com.example.sailboatapp.presentation.red
+import com.example.sailboatapp.presentation.ui.KNOT_SYMBOL
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
@@ -50,24 +53,196 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlin.math.abs
 import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 
+fun trovaAngoli(windAngles: JsonArray, destinationDirection: Double): Array<Array<Int>> {
+    var angolo1 = 0
+    var angolo2 = 0
+    var indice1 = 0
+    var indice2 = 0
+    val sizeAngoli = windAngles.size()
+
+    if (destinationDirection < 52) {
+        angolo1 = 52
+        angolo2 = 52
+        indice1 = 0
+        indice2 = 0
+    } else if (destinationDirection > 150) {
+        angolo1 = 150
+        angolo2 = 150
+        indice1 = 7
+        indice2 = 7
+    }
+
+    windAngles.forEachIndexed(
+        action = { i, element ->
+            val angoloCorrente = windAngles[i]
+            val angoloSuccessivo = windAngles[(i + 1) % sizeAngoli]
+            if (angoloCorrente.asInt <= destinationDirection && angoloSuccessivo.asInt >= destinationDirection) {
+                angolo1 = angoloCorrente.asInt
+                angolo2 = angoloSuccessivo.asInt
+                indice1 = i
+                indice2 = (i + 1) % sizeAngoli
+            }
+        }
+    )
+    val angoli = arrayOf(angolo1, angolo2)
+    val indici = arrayOf(indice1, indice2)
+    val angoliIndex = arrayOf(angoli, indici)
+    return angoliIndex
+}
+
+
+fun trovaVelocita(windSpeeds: JsonArray, windSpeed: Double): Array<Array<Int>> {
+    var v1 = -1
+    var v2 = -1
+    var indice1 = -1
+    var indice2 = -1
+    val sizeVelocita = windSpeeds.size()
+
+    windSpeeds.forEachIndexed(
+        action = { i, element ->
+            val vCorrente = windSpeeds[i]
+            val vSuccessivo = windSpeeds[(i + 1) % sizeVelocita]
+
+            if (windSpeed < 6 || windSpeed > 20) {
+                v1 = vCorrente.asInt
+                v2 = vCorrente.asInt
+                indice1 = i
+                indice2 = i
+            }
+            if (vCorrente.asInt <= windSpeed && vSuccessivo.asInt >= windSpeed) {
+                v1 = vCorrente.asInt
+                v2 = vSuccessivo.asInt
+                indice1 = i
+                indice2 = (i + 1) % sizeVelocita
+            }
+
+
+        }
+    )
+    val velocita = arrayOf(v1, v2)
+    val index = arrayOf(indice1, indice2)
+    val velocitaIndex = arrayOf(velocita, index)
+
+    return velocitaIndex
+}
+
+
+fun mediaPonderata(
+    angoli: Array<Int>,
+    destinationDirection: Double,
+    stime: JsonArray,
+    indiciAngoli: Array<Int>,
+    velocita: Array<Int>,
+    indiciVelocita: Array<Int>,
+    windSpeed: Double
+): Double {
+    val distanza1 = abs(angoli[0] - destinationDirection)
+    val distanza2 = abs(angoli[1] - destinationDirection)
+    val peso1 = 1 - distanza1 / (distanza1 + distanza2)
+    val peso2 = 1 - peso1
+    val v1 = abs(velocita[0] - windSpeed)
+    val v2 = abs(velocita[1] - windSpeed)
+    val pesov1 = 1 - v1 / (v1 + v2)
+    val pesov2 = 1 - pesov1
+
+    val mediaPonderata =
+        (peso1 * pesov1 * stime[indiciAngoli[0]].asJsonArray[indiciVelocita[0]].asInt + peso1 * pesov2 * stime[indiciAngoli[0]].asJsonArray[indiciVelocita[1]].asInt + peso2 * pesov1 * stime[indiciAngoli[1]].asJsonArray[indiciVelocita[0]].asInt + peso2 * pesov2 * stime[indiciAngoli[1]].asJsonArray[indiciVelocita[1]].asInt)
+    return mediaPonderata;
+}
+
+fun routeCalculator(
+    destinationDirection: Double,
+    windDirection: Double,
+    windSpeed: Double,
+    trueWindAngle: Double,
+    stimeVelocita: JsonObject
+): Array<String> {
+    var vMaxEff = -1.0
+    var optimalSail = ""
+    var vMax = -1.0
+    var velocitas : ArrayList<Double> = arrayListOf()
+    var velocitasEff :  ArrayList<Double> = arrayListOf()
+    var maxAngle = -1
+
+    stimeVelocita.keySet().forEach {
+        var vela = it
+        var windAngles = stimeVelocita.getAsJsonObject(it).getAsJsonArray("angoliVento")
+        var windSpeeds = stimeVelocita.getAsJsonObject(it).getAsJsonArray("velocitaVento")
+        var stime = stimeVelocita.getAsJsonObject(it).getAsJsonArray("stimeVelocitaBarca")
+
+        println("Vela: $vela")
+        println("WindAngles: $windAngles")
+        println("WindSpeeds: $windSpeeds")
+        println("Stime: $stime")
+
+
+        var angoliIndex = trovaAngoli(windAngles, destinationDirection)
+
+        var velocitaIndex = trovaVelocita(windSpeeds, windSpeed)
+
+        val vel = mediaPonderata(
+            angoliIndex[0],
+            destinationDirection,
+            stime,
+            angoliIndex[1],
+            velocitaIndex[0],
+            velocitaIndex[1],
+            windSpeed
+        )
+        velocitas.add(vel)
+
+        if(vel<0)
+        {
+            return arrayOf("vel < 0")
+        }
+
+        val distanza1 = abs(angoliIndex[0].asList()[0] - destinationDirection)
+        val distanza2 = abs(angoliIndex[0].asList()[1] - destinationDirection)
+        val peso1 = 1 - distanza1/(distanza1 + distanza2)
+        val peso2 = 1-peso1
+        var angoloSugg = -1
+        if(distanza1>=distanza2){
+            angoloSugg = angoliIndex[0].asList()[0]
+        }else if(distanza2>distanza1){
+            angoloSugg = angoliIndex[0].asList()[1]
+        }
+        //calcolo la velocità effettiva
+        val vEffettiva = vel * cos(trueWindAngle)
+        velocitasEff.add(vEffettiva)
+        if(vEffettiva > vMax){
+            vMaxEff = vEffettiva
+            optimalSail = it
+            vMax = vel
+            maxAngle = angoloSugg
+        }
+
+
+    }
+
+    return arrayOf(maxAngle.toString(), optimalSail,vMax.toString() ,vMaxEff.toString())
+
+}
+
+
 fun getTWA(windDirection: Double, shipDirection: Double): Double {
     var relativeWindDirection = windDirection - shipDirection
-    println("relativeWindDirection: $relativeWindDirection")
+    //println("relativeWindDirection: $relativeWindDirection")
     //Normalize the angle
-    if(relativeWindDirection < 0){
+    if (relativeWindDirection < 0) {
         relativeWindDirection += 360.0
-    }else if(relativeWindDirection > 360){
+    } else if (relativeWindDirection > 360) {
         relativeWindDirection -= 360.0
     }
-    println("twa pre adjust: $relativeWindDirection")
+    //println("twa pre adjust: $relativeWindDirection")
     //Adjuste the range
-    if(relativeWindDirection > 180){
+    if (relativeWindDirection > 180) {
         relativeWindDirection = 360.0 - relativeWindDirection
     }
     return relativeWindDirection;
@@ -167,6 +342,8 @@ fun Map(navController: NavHostController) {
     var courseOverGround by remember { mutableDoubleStateOf(0.0) }
     var trueWindAngle by remember { mutableDoubleStateOf(0.0) }
 
+    var stimeVelocita: JsonObject = JsonObject()
+
     var anchorVisibility by remember { mutableStateOf(false) }
     var destinationPositionVisibility by remember { mutableStateOf(false) }
     var destinationLineVisibility by remember { mutableStateOf(false) }
@@ -179,6 +356,53 @@ fun Map(navController: NavHostController) {
 
     val localViewModel: LocalViewModel = viewModel()
     val remoteViewModel: RemoteViewModel = viewModel()
+
+    //Stime velocita local
+    val stimeVelocitaUiState: StimeVelocitaUiState = localViewModel.stimeVelocitaUiState
+
+    when (stimeVelocitaUiState) {
+        is StimeVelocitaUiState.Error -> println("Error stime velocita local")
+        is StimeVelocitaUiState.Loading -> println("Loading stime velocita local")
+        is StimeVelocitaUiState.Success -> {
+
+            var result =
+                (localViewModel.stimeVelocitaUiState as StimeVelocitaUiState.Success).stimeVelocita
+            println("Success: Stime velocita local $result")
+
+            stimeVelocita = result
+
+            /*result.keySet().forEach{
+
+            }*/
+
+
+            //println("keyset = " + result.keySet().toString())
+
+
+            //stimeVelocita = Gson().fromJson(result, Array<JsonObject>::class.java)
+            //println("Stime velocita: $stimeVelocita")
+        }
+    }
+
+    if(!checkLocalConnection()){
+        //Stime velocita remote
+        val getstimeRemoteUiState: GetStimeRemoteUiState = remoteViewModel.getStimeRemoteUiState
+        connectionState = ConnectionState.Remote
+        when (getstimeRemoteUiState) {
+            is GetStimeRemoteUiState.Error -> println("Error stime velocita remote")
+            is GetStimeRemoteUiState.Loading -> println("Loading stime velocita remote")
+            is GetStimeRemoteUiState.Success -> {
+                //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
+                println("Success: Stime velocita remote")
+                stimeVelocita =
+                    Gson().fromJson(
+                    (remoteViewModel.getStimeRemoteUiState as GetStimeRemoteUiState.Success).stime,JsonObject::class.java)
+                println("Success: Stime velocita remote $stimeVelocita")
+            }
+        }
+
+    }
+
 
     var anchorLocal: Anchor = Anchor("0.0", "0.0", "-1", "")
     var anchorRemote = ""
@@ -354,7 +578,7 @@ fun Map(navController: NavHostController) {
         }
     } else {
         println("Ship & NMEAdata local")
-        if (nmeaData.value["latitude"]!! == "0.0") {
+        if (nmeaData.value["latitude"]!! == "0.0" || nmeaData.value.isNullOrEmpty() ) {
             shipPosition
         } else {
             shipPosition = LatLng(
@@ -399,6 +623,37 @@ fun Map(navController: NavHostController) {
     }
     trueWindAngle = getTWA(windDirection, shipDirection)
 
+    val route = routeCalculator(destinationDirection, windDirection, windSpeed, trueWindAngle, stimeVelocita)
+
+
+    var lastMaxAngle by remember { mutableStateOf(0) }
+    var lastOptimalSail by remember { mutableStateOf("") }
+    var lastVMax by remember { mutableStateOf("") }
+    var lastVMaxEff by remember { mutableStateOf("") }
+
+
+    var maxAngle = if (route[0].toInt() != -1) {
+        lastMaxAngle = route[0].toInt()
+        lastMaxAngle
+    } else lastMaxAngle
+
+    var optimalSail = if(route[1] != "") {
+        lastOptimalSail = route[1]
+        lastOptimalSail
+    } else lastOptimalSail
+    var vMax = if (route[2].toDouble() != -1.0) {
+        lastVMax = String.format("%.2f", route[2].toDouble())
+        lastVMax
+    } else lastVMax
+    var vMaxEff = if(route[3].toDouble() != -1.0) {
+        lastVMaxEff = String.format("%.2f", route[3].toDouble())
+        lastVMaxEff
+    } else lastVMaxEff
+
+    route.forEach {
+        println("Route: " + it)
+    }
+
     Box(
         modifier = Modifier.fillMaxSize(),
         //autoCentering = AutoCenteringParams(itemIndex = 0),
@@ -418,10 +673,10 @@ fun Map(navController: NavHostController) {
                 item { Text(text = "SOG: $speedOverGround") }
                 item { Text(text = "Wind direction: $windDirection") }
                 item { Spacer(modifier = Modifier.height(10.dp)) }
-                item { Text(text = "Sugg. Route:") }
-                item { Text(text = "Sugg. sail conf.:") }
-                item { Text(text = "Estimated Speed:") }
-                item { Text(text = "Estimated VMG:") }
+                item { Text(text = "Sugg. Route: $maxAngle") }
+                item { Text(text = "Sugg. sail conf.: $optimalSail") }
+                item { Text(text = "Estimated Speed: ${vMax} $KNOT_SYMBOL") }
+                item { Text(text = "Estimated VMG: $vMaxEff $KNOT_SYMBOL") }
                 item { Spacer(modifier = Modifier.height(10.dp)) }
                 item {
                     Button(

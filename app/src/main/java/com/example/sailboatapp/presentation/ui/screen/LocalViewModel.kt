@@ -10,6 +10,7 @@ import com.example.sailboatapp.presentation.network.Anchor
 import com.example.sailboatapp.presentation.network.LocalApi
 import com.example.sailboatapp.presentation.network.LocalWebSocketListener
 import com.example.sailboatapp.presentation.network.Raffica
+import com.google.gson.JsonObject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,9 +40,11 @@ sealed interface SetAnchorLocalUiState {
     object Loading : SetAnchorLocalUiState
 }
 
-
-
-
+sealed interface StimeVelocitaUiState {
+    data class Success(val stimeVelocita: JsonObject) : StimeVelocitaUiState
+    object Error : StimeVelocitaUiState
+    object Loading : StimeVelocitaUiState
+}
 class LocalViewModel : ViewModel() {
     /** The mutable State that stores the status of the most recent request */
     private val _data = MutableStateFlow<HashMap<String, String>>(HashMap<String, String>())
@@ -51,6 +54,8 @@ class LocalViewModel : ViewModel() {
     var getAnchorUiState: GetAnchorLocalUiState by mutableStateOf(GetAnchorLocalUiState.Loading)
         private set
     var setAnchorUiState: SetAnchorLocalUiState by mutableStateOf(SetAnchorLocalUiState.Loading)
+        private set
+    var stimeVelocitaUiState: StimeVelocitaUiState by mutableStateOf(StimeVelocitaUiState.Loading)
         private set
 
     /**
@@ -70,6 +75,7 @@ class LocalViewModel : ViewModel() {
             while (true) {
                 getRaffica()
                 getAnchor()
+                getStimeVelocita()
                 delay(5000) // Delay for 5 seconds
             }
         }
@@ -90,6 +96,24 @@ class LocalViewModel : ViewModel() {
                 RafficaUiState.Error
             }
         }
+    }
+
+    fun getStimeVelocita(){
+        viewModelScope.launch {
+            stimeVelocitaUiState = try {
+                //println("Try raffica")
+
+                val result = LocalApi.retrofitService.getStimeVelocita()
+
+                //println("Raffica vel: "+ result.velVento)
+                StimeVelocitaUiState.Success(
+                    result
+                )
+            } catch (e: IOException) {
+                StimeVelocitaUiState.Error
+            }
+        }
+
     }
 
     fun getAnchor() {

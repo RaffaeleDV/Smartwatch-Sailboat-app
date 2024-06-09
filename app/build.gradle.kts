@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
     id("org.jetbrains.kotlin.plugin.serialization") version "1.8.10"
-
 }
 
 android {
@@ -18,7 +17,6 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-
     }
 
     buildTypes {
@@ -48,7 +46,9 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
 }
+
 
 dependencies {
 
@@ -110,6 +110,10 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
 
     implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
+
+    implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
+    
 
 
 }

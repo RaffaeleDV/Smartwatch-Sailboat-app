@@ -28,6 +28,12 @@ sealed interface SetAnchorRemoteUiState {
     object Loading : SetAnchorRemoteUiState
 }
 
+sealed interface GetStimeRemoteUiState {
+    data class Success(val stime: String) : GetStimeRemoteUiState
+    object Error : GetStimeRemoteUiState
+    object Loading : GetStimeRemoteUiState
+}
+
 class RemoteViewModel : ViewModel() {
     /** The mutable State that stores the status of the most recent request */
     var remoteUiState: RemoteUiState by mutableStateOf(RemoteUiState.Loading)
@@ -36,6 +42,7 @@ class RemoteViewModel : ViewModel() {
         private set
     var setAnchorRemoteUiState: SetAnchorRemoteUiState by mutableStateOf(SetAnchorRemoteUiState.Loading)
         private set
+    var getStimeRemoteUiState: GetStimeRemoteUiState by mutableStateOf(GetStimeRemoteUiState.Loading)
 
     /**
      * Call on init so we can display status immediately.
@@ -49,6 +56,7 @@ class RemoteViewModel : ViewModel() {
             while (true) {
                 getNmeaRemote()
                 getAnchor()
+                getStimeVelocita()
                 delay(5000) // Delay for 5 seconds
             }
         }
@@ -97,6 +105,20 @@ class RemoteViewModel : ViewModel() {
                 )
             } catch (e: IOException) {
                 SetAnchorRemoteUiState.Error
+            }
+        }
+    }
+
+    fun getStimeVelocita(){
+        viewModelScope.launch {
+            getStimeRemoteUiState = try {
+                //("Try")
+                val result = RemoteApi.retrofitService.getStime()
+                GetStimeRemoteUiState.Success(
+                    result
+                )
+            }catch (e: IOException){
+                GetStimeRemoteUiState.Error
             }
         }
     }
