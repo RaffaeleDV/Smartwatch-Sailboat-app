@@ -148,7 +148,7 @@ class LocalViewModel : ViewModel() {
 
     fun getNmeaLocal() {
         val client = OkHttpClient()
-        val request = Request.Builder().url("ws://192.168.178.48:8080").get().build()
+        val request = Request.Builder().url("ws://$BASE_URL:8080").get().build()
         val listener = LocalWebSocketListener { bytes ->
             viewModelScope.launch {
                 _data.value = processData(bytes) // Update the state with the received data

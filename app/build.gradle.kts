@@ -113,6 +113,10 @@ dependencies {
 
     implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
+    implementation ("org.mozilla.geckoview:geckoview-omni:100.0.20220425210429")
+
+    implementation ("org.nanohttpd:nanohttpd:2.3.1")
+
     
 
 

@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -78,25 +79,21 @@ fun trovaAngoli(windAngles: JsonArray, destinationDirection: Double): Array<Arra
         indice1 = 7
         indice2 = 7
     }
-
-    windAngles.forEachIndexed(
-        action = { i, element ->
-            val angoloCorrente = windAngles[i]
-            val angoloSuccessivo = windAngles[(i + 1) % sizeAngoli]
-            if (angoloCorrente.asInt <= destinationDirection && angoloSuccessivo.asInt >= destinationDirection) {
-                angolo1 = angoloCorrente.asInt
-                angolo2 = angoloSuccessivo.asInt
-                indice1 = i
-                indice2 = (i + 1) % sizeAngoli
-            }
+    windAngles.forEachIndexed(action = { i, element ->
+        val angoloCorrente = windAngles[i]
+        val angoloSuccessivo = windAngles[(i + 1) % sizeAngoli]
+        if (angoloCorrente.asInt <= destinationDirection && angoloSuccessivo.asInt >= destinationDirection) {
+            angolo1 = angoloCorrente.asInt
+            angolo2 = angoloSuccessivo.asInt
+            indice1 = i
+            indice2 = (i + 1) % sizeAngoli
         }
-    )
+    })
     val angoli = arrayOf(angolo1, angolo2)
     val indici = arrayOf(indice1, indice2)
     val angoliIndex = arrayOf(angoli, indici)
     return angoliIndex
 }
-
 
 fun trovaVelocita(windSpeeds: JsonArray, windSpeed: Double): Array<Array<Int>> {
     var v1 = -1
@@ -105,35 +102,31 @@ fun trovaVelocita(windSpeeds: JsonArray, windSpeed: Double): Array<Array<Int>> {
     var indice2 = -1
     val sizeVelocita = windSpeeds.size()
 
-    windSpeeds.forEachIndexed(
-        action = { i, element ->
-            val vCorrente = windSpeeds[i]
-            val vSuccessivo = windSpeeds[(i + 1) % sizeVelocita]
+    windSpeeds.forEachIndexed(action = { i, element ->
+        val vCorrente = windSpeeds[i]
+        val vSuccessivo = windSpeeds[(i + 1) % sizeVelocita]
 
-            if (windSpeed < 6 || windSpeed > 20) {
-                v1 = vCorrente.asInt
-                v2 = vCorrente.asInt
-                indice1 = i
-                indice2 = i
-            }
-            if (vCorrente.asInt <= windSpeed && vSuccessivo.asInt >= windSpeed) {
-                v1 = vCorrente.asInt
-                v2 = vSuccessivo.asInt
-                indice1 = i
-                indice2 = (i + 1) % sizeVelocita
-            }
-
-
+        if (windSpeed < 6 || windSpeed > 20) {
+            v1 = vCorrente.asInt
+            v2 = vCorrente.asInt
+            indice1 = i
+            indice2 = i
         }
-    )
+        if (vCorrente.asInt <= windSpeed && vSuccessivo.asInt >= windSpeed) {
+            v1 = vCorrente.asInt
+            v2 = vSuccessivo.asInt
+            indice1 = i
+            indice2 = (i + 1) % sizeVelocita
+        }
+
+
+    })
     val velocita = arrayOf(v1, v2)
     val index = arrayOf(indice1, indice2)
     val velocitaIndex = arrayOf(velocita, index)
 
     return velocitaIndex
 }
-
-
 fun mediaPonderata(
     angoli: Array<Int>,
     destinationDirection: Double,
@@ -167,8 +160,8 @@ fun routeCalculator(
     var vMaxEff = -1.0
     var optimalSail = ""
     var vMax = -1.0
-    var velocitas : ArrayList<Double> = arrayListOf()
-    var velocitasEff :  ArrayList<Double> = arrayListOf()
+    var velocitas: ArrayList<Double> = arrayListOf()
+    var velocitasEff: ArrayList<Double> = arrayListOf()
     var maxAngle = -1
 
     stimeVelocita.keySet().forEach {
@@ -181,7 +174,6 @@ fun routeCalculator(
         println("WindAngles: $windAngles")
         println("WindSpeeds: $windSpeeds")
         println("Stime: $stime")
-
 
         var angoliIndex = trovaAngoli(windAngles, destinationDirection)
 
@@ -198,36 +190,31 @@ fun routeCalculator(
         )
         velocitas.add(vel)
 
-        if(vel<0)
-        {
+        if (vel < 0) {
             return arrayOf("vel < 0")
         }
 
         val distanza1 = abs(angoliIndex[0].asList()[0] - destinationDirection)
         val distanza2 = abs(angoliIndex[0].asList()[1] - destinationDirection)
-        val peso1 = 1 - distanza1/(distanza1 + distanza2)
-        val peso2 = 1-peso1
+        val peso1 = 1 - distanza1 / (distanza1 + distanza2)
+        val peso2 = 1 - peso1
         var angoloSugg = -1
-        if(distanza1>=distanza2){
+        if (distanza1 >= distanza2) {
             angoloSugg = angoliIndex[0].asList()[0]
-        }else if(distanza2>distanza1){
+        } else if (distanza2 > distanza1) {
             angoloSugg = angoliIndex[0].asList()[1]
         }
         //calcolo la velocità effettiva
         val vEffettiva = vel * cos(trueWindAngle)
         velocitasEff.add(vEffettiva)
-        if(vEffettiva > vMax){
+        if (vEffettiva > vMax) {
             vMaxEff = vEffettiva
             optimalSail = it
             vMax = vel
             maxAngle = angoloSugg
         }
-
-
     }
-
-    return arrayOf(maxAngle.toString(), optimalSail,vMax.toString() ,vMaxEff.toString())
-
+    return arrayOf(maxAngle.toString(), optimalSail, vMax.toString(), vMaxEff.toString())
 }
 
 
@@ -321,11 +308,12 @@ fun checkAnchorDistance(anchorLatLng: LatLng, shipLatLng: LatLng): Boolean {
     }
     return false
 }
-
-
 @Composable
-fun Map(navController: NavHostController) {
+fun Map(
+    navController: NavHostController, isSwippeEnabled: Boolean, onSwipeChange: (Boolean) -> Unit
+) {
 
+    onSwipeChange(false)
     //val ok = getDistanceBetweenPointsMeters("45.4641943", "9.1896346", "40.8358846", "14.2487679")
     //println("Napoli milano: " + ok)
     var shipPosition by remember { mutableStateOf(LatLng(0.0, 0.0)) }
@@ -372,19 +360,14 @@ fun Map(navController: NavHostController) {
             stimeVelocita = result
 
             /*result.keySet().forEach{
-
             }*/
-
-
             //println("keyset = " + result.keySet().toString())
-
-
             //stimeVelocita = Gson().fromJson(result, Array<JsonObject>::class.java)
             //println("Stime velocita: $stimeVelocita")
         }
     }
 
-    if(!checkLocalConnection()){
+    if (!checkLocalConnection()) {
         //Stime velocita remote
         val getstimeRemoteUiState: GetStimeRemoteUiState = remoteViewModel.getStimeRemoteUiState
         connectionState = ConnectionState.Remote
@@ -394,19 +377,19 @@ fun Map(navController: NavHostController) {
             is GetStimeRemoteUiState.Success -> {
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
                 println("Success: Stime velocita remote")
-                stimeVelocita =
-                    Gson().fromJson(
-                    (remoteViewModel.getStimeRemoteUiState as GetStimeRemoteUiState.Success).stime,JsonObject::class.java)
+                stimeVelocita = Gson().fromJson(
+                    (remoteViewModel.getStimeRemoteUiState as GetStimeRemoteUiState.Success).stime,
+                    JsonObject::class.java
+                )
                 println("Success: Stime velocita remote $stimeVelocita")
             }
         }
-
     }
-
 
     var anchorLocal: Anchor = Anchor("0.0", "0.0", "-1", "")
     var anchorRemote = ""
     var anchorRemoteObj = Anchor("0.0", "0.0", "-1", "")
+    var anchorDistanceMeters by remember { mutableIntStateOf(0) }
 
     //Set Anchor state
     val setAnchorLocalUiState: SetAnchorLocalUiState = localViewModel.setAnchorUiState
@@ -445,11 +428,9 @@ fun Map(navController: NavHostController) {
             is GetAnchorRemoteUiState.Error -> {
                 println("Error remote anchor")
             }
-
             is GetAnchorRemoteUiState.Loading -> {
                 println("Loading remote anchor")
             }
-
             is GetAnchorRemoteUiState.Success -> {
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
                 println("Success: Remote connection anchor")
@@ -527,6 +508,8 @@ fun Map(navController: NavHostController) {
             )
         )
     }
+    var resetCameraCount by remember { mutableIntStateOf(0) }
+    println("reset camera count: $resetCameraCount")
 
     //Nmea data
     if (nmeaData.value["latitude"].isNullOrEmpty() && nmeaData.value["longitude"].isNullOrEmpty()) {
@@ -544,7 +527,7 @@ fun Map(navController: NavHostController) {
             courseOverGround = nmeaDataRemote["courseOverGround"]!!.toDouble()
             speedOverGround = nmeaDataRemote["speedOverGround"]!!.toDouble()
 
-            if (shipPosition.latitude != 0.0) {
+            if (shipPosition.latitude != 0.0 && resetCameraCount <= 3) {
                 println("reset camera remote: $shipPosition")
                 cameraPositionState.move(
                     CameraUpdateFactory.newCameraPosition(
@@ -553,6 +536,8 @@ fun Map(navController: NavHostController) {
                         )
                     )
                 )
+                resetCameraCount++
+                println("reset camera count: $resetCameraCount")
             }
             println("Ancora remota: " + anchorRemoteObj.latitude + " " + anchorRemoteObj.longitude + " Ship: " + shipPosition.toString())
             println(
@@ -575,10 +560,17 @@ fun Map(navController: NavHostController) {
                 }
                 mp.start()
             }
+            anchorDistanceMeters = getDistanceBetweenPointsMeters(
+                anchorRemoteObj.latitude,
+                anchorRemoteObj.longitude,
+                shipPosition.latitude.toString(),
+                shipPosition.longitude.toString(),
+                "kilometers"
+            )
         }
     } else {
         println("Ship & NMEAdata local")
-        if (nmeaData.value["latitude"]!! == "0.0" || nmeaData.value.isNullOrEmpty() ) {
+        if (nmeaData.value["latitude"]!! == "0.0" || nmeaData.value.isNullOrEmpty()) {
             shipPosition
         } else {
             shipPosition = LatLng(
@@ -591,11 +583,13 @@ fun Map(navController: NavHostController) {
             courseOverGround = nmeaData.value["courseOverGround"]!!.toDouble()
             speedOverGround = nmeaData.value["shipSpeed"]!!.toDouble()
 
-            if (shipPosition.latitude != 0.0) {
+            if (shipPosition.latitude != 0.0 && resetCameraCount <= 3) {
                 println("reset camera local: $shipPosition")
                 cameraPositionState = rememberCameraPositionState {
                     position = CameraPosition.fromLatLngZoom(shipPosition, cameraZoom)
                 }
+                resetCameraCount++
+                println("reset camera count: $resetCameraCount")
             }
             println("Ancora remota: " + anchorLocal.latitude + " " + anchorLocal.longitude + " Ship: " + shipPosition.toString())
             println(
@@ -618,12 +612,21 @@ fun Map(navController: NavHostController) {
                 }
                 mp.start()
             }
+            anchorDistanceMeters = getDistanceBetweenPointsMeters(
+                anchorLocal.latitude,
+                anchorLocal.longitude,
+                shipPosition.latitude.toString(),
+                shipPosition.longitude.toString(),
+                "kilometers"
+            )
         }
         //println(ship_position.toString())
     }
     trueWindAngle = getTWA(windDirection, shipDirection)
 
-    val route = routeCalculator(destinationDirection, windDirection, windSpeed, trueWindAngle, stimeVelocita)
+    val route = routeCalculator(
+        destinationDirection, windDirection, windSpeed, trueWindAngle, stimeVelocita
+    )
 
 
     var lastMaxAngle by remember { mutableStateOf(0) }
@@ -637,7 +640,7 @@ fun Map(navController: NavHostController) {
         lastMaxAngle
     } else lastMaxAngle
 
-    var optimalSail = if(route[1] != "") {
+    var optimalSail = if (route[1] != "") {
         lastOptimalSail = route[1]
         lastOptimalSail
     } else lastOptimalSail
@@ -645,7 +648,7 @@ fun Map(navController: NavHostController) {
         lastVMax = String.format("%.2f", route[2].toDouble())
         lastVMax
     } else lastVMax
-    var vMaxEff = if(route[3].toDouble() != -1.0) {
+    var vMaxEff = if (route[3].toDouble() != -1.0) {
         lastVMaxEff = String.format("%.2f", route[3].toDouble())
         lastVMaxEff
     } else lastVMaxEff
@@ -655,7 +658,7 @@ fun Map(navController: NavHostController) {
     }
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize()
         //autoCentering = AutoCenteringParams(itemIndex = 0),
         //state = listState
     ) {
@@ -726,7 +729,7 @@ fun Map(navController: NavHostController) {
                 anchor = Offset(0.5f, 0.5f),
                 alpha = 10F,
                 icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_action_ship_marker),
-                title = "Nave",
+                //title = "Nave",
                 //snippet = "Descrizione\n Vento: 10"
             )
             Marker(
@@ -737,7 +740,7 @@ fun Map(navController: NavHostController) {
                 visible = anchorVisibility,
                 icon = BitmapDescriptorFactory.fromResource(R.drawable.ic_action_anchor),
                 title = "Ancora",
-                //snippet = "Descrizione",
+                snippet = "$anchorDistanceMeters m",
                 zIndex = 1F
             )
             Marker(
@@ -760,7 +763,13 @@ fun Map(navController: NavHostController) {
         ConstraintLayout(
             modifier = Modifier.fillMaxSize()
         ) {
-            val (leftButton, centerButton, rightButton, bottomButton) = createRefs()
+            val (leftButton, centerButton, rightButton, bottomButton) = createRefs()/*Text(
+                modifier = Modifier.constrainAs(centerButton){
+                    top.linkTo(parent.top)
+                    bottom.linkTo(parent.bottom)
+                },
+                text = "Ancora"
+            )*/
             Button(//Anchor Button
                 onClick = {
                     anchorVisibility = !anchorVisibility

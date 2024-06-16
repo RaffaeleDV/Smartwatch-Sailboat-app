@@ -1,12 +1,9 @@
 package com.example.sailboatapp.presentation.ui.screen
 
-import android.icu.text.DecimalFormat
-import android.view.ViewGroup
-import android.webkit.WebView
+
+import android.content.Context
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,7 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,22 +26,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Fill
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.data.UiToolingDataApi
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.constraintlayout.compose.ConstraintLayout
-import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
@@ -62,31 +49,20 @@ import androidx.wear.compose.material.Vignette
 import androidx.wear.compose.material.VignettePosition
 import androidx.wear.compose.material.dialog.Dialog
 import com.example.sailboatapp.R
-import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.charts.RadarChart
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.components.YAxis
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.data.RadarData
-import com.github.mikephil.charting.data.RadarDataSet
-import com.github.mikephil.charting.data.RadarEntry
-import com.github.mikephil.charting.formatter.ValueFormatter
-import com.github.mikephil.charting.utils.ColorTemplate
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import com.google.maps.android.ktx.utils.heatmaps.heatmapTileProviderWithData
+import org.mozilla.geckoview.GeckoRuntime
+import org.mozilla.geckoview.GeckoRuntimeSettings
+import org.mozilla.geckoview.GeckoSession
+import org.mozilla.geckoview.GeckoView
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 
-
-
-@OptIn(UiToolingDataApi::class)
 @Composable
 fun Polars(navController: NavHostController) {
-
 
     var polarRecState by remember {
         mutableStateOf(false)
@@ -125,10 +101,10 @@ fun Polars(navController: NavHostController) {
 
     var connectionState: ConnectionState by remember { mutableStateOf(ConnectionState.Loading) }
 
-
     var stimeVelocita = JsonObject()
 
     var showDialog by remember { mutableStateOf(false) }
+    var showChart by remember { mutableStateOf(false) }
 
     val localViewModel: LocalViewModel = viewModel()
     val remoteViewModel: RemoteViewModel = viewModel()
@@ -146,15 +122,9 @@ fun Polars(navController: NavHostController) {
             println("Success: Stime velocita local $result")
 
             stimeVelocita = result
-
             /*result.keySet().forEach{
-
             }*/
-
-
             //println("keyset = " + result.keySet().toString())
-
-
             //stimeVelocita = Gson().fromJson(result, Array<JsonObject>::class.java)
             //println("Stime velocita: $stimeVelocita")
         }
@@ -170,11 +140,10 @@ fun Polars(navController: NavHostController) {
             is GetStimeRemoteUiState.Success -> {
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
                 println("Success: Stime velocita remote")
-                stimeVelocita =
-                    Gson().fromJson(
-                        (remoteViewModel.getStimeRemoteUiState as GetStimeRemoteUiState.Success).stime,
-                        JsonObject::class.java
-                    )
+                stimeVelocita = Gson().fromJson(
+                    (remoteViewModel.getStimeRemoteUiState as GetStimeRemoteUiState.Success).stime,
+                    JsonObject::class.java
+                )
                 println("Success: Stime velocita remote $stimeVelocita")
             }
         }
@@ -196,6 +165,7 @@ fun Polars(navController: NavHostController) {
     }, pageIndicator = {
         HorizontalPageIndicator(pageIndicatorState = pageIndicatorState)
     }) {
+
         ScalingLazyColumn(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -212,156 +182,36 @@ fun Polars(navController: NavHostController) {
             }
             item { Spacer(modifier = Modifier.height(30.dp)) }
             item {
-
-
-                    /*Canvas(
-                        modifier = Modifier.height(200.dp).width(200.dp)
-
-                    ) {
-                        drawArc(
-                            color = Color.Red,
-                            startAngle = -90f,
-                            sweepAngle = 180f,
-                            useCenter = false,
-                            style = Fill,
-
-
-                        )
-                        drawLine( color = Color.Blue, Offset(size.width / 2, size.width / 2), Offset(size.width , 0f), 2f)
-
-                        val centerX = size.width / 2
-                        val centerY = size.height / 2
-                        val radius = size.minDimension / 2
-
-                        val data = listOf(3f, 2f, 4f, 5f, 3f)
-
-                        // Draw the radar chart outline
-                        drawCircle(
-                            color = Color.Yellow,
-                            radius = radius * 10,
-                            style = Stroke(width = 10f)
-                        )
-
-                        // Draw the radar chart lines
-                        for (i in 0 until data.size) {
-                            val angle = Math.PI * i / data.size
-                            val startX = centerX + (radius * Math.cos(angle)).toFloat()
-                            val startY = centerY + (radius * Math.sin(angle)).toFloat()
-                            drawLine(
-                                color = Color.Green,
-                                start = Offset(centerX, centerY),
-                                end = Offset(startX, startY),
-                                strokeWidth = 2f
-                            )
+                Button(//registra button
+                    onClick = {
+                        if (polarRecState) {
+                            polarRecState = false
+                            polarString = "Inizia registrazione"
+                        } else {
+                            polarRecState = true
+                            polarString = "Termina"
+                            showDialog = true
                         }
-
-                        // Draw the data points
-                        val path = Path()
-                        for (i in 0 until data.size) {
-                            val angle = Math.PI * i / data.size
-                            val value = data[i]
-                            val x = centerX + (radius * value * Math.cos(angle)).toFloat()
-                            val y = centerY + (radius * value * Math.sin(angle)).toFloat()
-                            if (i == 0) {
-                                path.moveTo(x, y)
-                            } else {
-                                path.lineTo(x, y)
-                            }
-                            drawCircle(
-                                color = Color.Blue,
-                                center = Offset(x, y),
-                                radius = 8f
-                            )
-                        }
-                        // Connect the last point to the first point to close the path
-                        path.close()
-                        // Draw the filled area
-                        drawPath(
-                            path = path,
-                            color = Color.Blue.copy(alpha = 0.3f)
-                        )
-                    }
-*/
-
-                /*var data = PolarChartData(
-                    windAngles = listOf(0f, 45f, 90f, 135f, 180f, 225f, 270f, 315f),
-                    windSpeeds = listOf(0f, 6f, 8f, 6f, 3f, 6f, 8f, 6f)
-                )
-
-                AndroidView(
-                    factory = { context ->
-                        RadarChart(context).apply {
-                            description.isEnabled = false
-                            webLineWidth = 1f
-                            webColor = ColorTemplate.PASTEL_COLORS.first()
-                            webLineWidthInner = 1f
-                            webColorInner = ColorTemplate.PASTEL_COLORS.first()
-                            webAlpha = 100
-
-
-                            val xAxis: XAxis = xAxis
-                            xAxis
-                            xAxis.textSize = 9f
-                            xAxis.yOffset = 0f
-                            xAxis.xOffset = 0f
-                            xAxis.valueFormatter = object : ValueFormatter() {
-                                private val labels = arrayOf("0°", "45°", "90°", "135°", "180°")
-                                override fun getFormattedValue(value: Float): String {
-                                    return labels[(value / 45).toInt() % labels.size]
-                                }
-                            }
-                            xAxis.textColor = ColorTemplate.PASTEL_COLORS.last()
-
-                            val yAxis: YAxis = yAxis
-                            yAxis.setLabelCount(5, true)
-                            yAxis.textSize = 9f
-                            yAxis.axisMinimum = 0f
-                            yAxis.axisMaximum = 10f
-                            yAxis.setDrawLabels(false)
-
-                            legend.isEnabled = false
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp) // Adjust height as needed
-                    ,
-                    update = { chart ->
-                       // val entries = data { RadarEntry(it) }
-
-                        var windSpeedsJson = JsonArray()
-
-                        println(stimeVelocita.getAsJsonObject("default"))
-                        var default = stimeVelocita.getAsJsonObject("default")
-
-                        val entries = ArrayList<RadarEntry>()
-                        if(default != null) {
-                            windSpeedsJson = default.getAsJsonArray("velocitaVento")
-                        }
-
-                        windSpeedsJson.forEachIndexed(
-                            action = { index, element ->
-                                entries.add(RadarEntry(element.asFloat))
-                            }
-                        )
-
-                        val dataSet = RadarDataSet(entries, "Polar Chart").apply {
-                            color = ColorTemplate.COLORFUL_COLORS.first()
-                            fillColor = ColorTemplate.COLORFUL_COLORS.first()
-                            setDrawFilled(true)
-                            fillAlpha = 180
-                            lineWidth = 2f
-                        }
-                        chart.data = RadarData(dataSet).apply {
-                            setValueTextSize(18f)
-                            setDrawValues(false)
-                        }
-
-                        chart.invalidate()
-                    }
-                )*/
-
-                Column () {
+                    }, modifier = Modifier
+                        .height(30.dp)
+                        .width(150.dp)
+                ) {
+                    Text(polarString)
+                }
+            }
+            item { Spacer(modifier = Modifier.height(30.dp)) }
+            item {
+                Button(//grafico button
+                    onClick = {
+                        showChart = true
+                    }, modifier = Modifier
+                        .height(30.dp)
+                        .width(150.dp)
+                ) {
+                    Text("Grafico")
+                }
+            }/*item {
+                Column() {
                     val numRows = 9
                     val numCols = 8
 
@@ -374,9 +224,6 @@ fun Polars(navController: NavHostController) {
                     var windSpeed = arrayListOf("-1", "-1", "-1", "-1", "-1", "-1", "-1")
                     var stime = ArrayList<Any>()
 
-
-
-
                     stimeVelocita.keySet().forEach {
                         vela = it
                         windAnglesJson =
@@ -386,9 +233,9 @@ fun Polars(navController: NavHostController) {
                         stimeJson = stimeVelocita.getAsJsonObject(it)
                             .getAsJsonArray("stimeVelocitaBarca")
 
-                        println("Vela: $vela")
-                        println("WindAngles: $windAnglesJson")
-                        println("WindSpeeds: $windSpeedsJson")
+                        //println("Vela: $vela")
+                        //println("WindAngles: $windAnglesJson")
+                        //println("WindSpeeds: $windSpeedsJson")
 
                         //println(windSpeedsJson.get(0))
                         windSpeed.clear()
@@ -419,7 +266,7 @@ fun Polars(navController: NavHostController) {
                         }
                         //println("Stime 0 ${stimeJson[0]}")
 
-                        println("Stime json: $stimeJson")
+                        //println("Stime json: $stimeJson")
                         stime.forEach { println("Stime: $it") }
 
                         ConstraintLayout(
@@ -437,7 +284,7 @@ fun Polars(navController: NavHostController) {
                                     val isHeaderRow = row == 0
                                     val isHeaderColumn = col == 0
 
-                                    println("Row & Col: $row $col")
+                                    //println("Row & Col: $row $col")
 
 
                                     Text(
@@ -472,83 +319,334 @@ fun Polars(navController: NavHostController) {
                         Spacer(modifier = Modifier.height(200.dp))
                     }
                 }
-            }
+            }*/
             item { Spacer(modifier = Modifier.height(30.dp)) }
-            item {
-                Button(//registra button
-                    onClick = {
-                        if (polarRecState) {
-                            polarRecState = false
-                            polarString = "Inizia registrazione"
-                        } else {
-                            polarRecState = true
-                            polarString = "Termina"
-                            showDialog = true
-                        }
-                    }, modifier = Modifier
-                        .height(30.dp)
-                        .width(150.dp)
-                ) {
-                    Text(polarString)
-                }
-            }
-            item {
-                var textState by remember { mutableStateOf("") }/*BasicTextField(
-                    modifier = Modifier.fillMaxSize(),
+        }
+        var textState by remember { mutableStateOf("") }
+        Dialog(showDialog = showDialog, onDismissRequest = { showDialog = false }) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(text = "Configurazione vele: ")
+                Spacer(modifier = Modifier.height(10.dp))
+                BasicTextField(modifier = Modifier,
                     value = textState,
-                    onValueChange = {textState = it},
+                    onValueChange = { textState = it },
                     textStyle = TextStyle.Default,
-                    decorationBox = {
-                        innerTextField ->
-                        Row (
+                    singleLine = true,
+                    decorationBox = { innerTextField ->
+                        Row(
                             modifier = Modifier
-                                .background(MaterialTheme.colors.secondary)
+                                .background(MaterialTheme.colors.primary)
                                 .padding(5.dp)
                         ) {
                             innerTextField()
                         }
-                    }
-                )*/
-                Dialog(showDialog = showDialog, onDismissRequest = { showDialog = false }) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(text = "Configurazione vele: ")
-                        Spacer(modifier = Modifier.height(10.dp))
-                        BasicTextField(modifier = Modifier,//.absoluteOffset { IntOffset(50,160) },
-                            value = textState,
-                            onValueChange = { textState = it },
-                            textStyle = TextStyle.Default,
-                            singleLine = true,
-                            decorationBox = { innerTextField ->
-                                Row(
-                                    modifier = Modifier
-                                        .background(MaterialTheme.colors.primary)
-                                        .padding(5.dp)
-                                ) {
-                                    innerTextField()
-                                }
-                            })
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Button(
-                            onClick = {
-                                showDialog = false
-                            }, modifier = Modifier.size(30.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_action_done_icon),
-                                contentDescription = "Done",
-                                modifier = Modifier.size(25.dp)
-                            )
-                        }
-                    }
+                    })
+                Spacer(modifier = Modifier.height(20.dp))
+                Button(
+                    onClick = {
+                        showDialog = false
+                    }, modifier = Modifier.size(30.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_action_done_icon),
+                        contentDescription = "Done",
+                        modifier = Modifier.size(25.dp)
+                    )
                 }
+            }
+        }
+        //Dialog chart
+        Dialog(showDialog = showChart, onDismissRequest = { showChart = false }) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        color = Color.Black,
+                        shape = CircleShape,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                AndroidView(modifier = Modifier
+                    .matchParentSize()
+                    .align(Alignment.Center),
+                    factory = { context ->
+                        val v = GeckoView(context)
+                        val session = GeckoSession().apply {
+                            // Workaround for Bug 1758212
+                            setContentDelegate(object : GeckoSession.ContentDelegate {})
+                        }
+                        val runtimeSettings =
+                            GeckoRuntimeSettings.Builder().consoleOutput(true).build()
+
+                        var sRuntime: GeckoRuntime? = null
+
+                        if (sRuntime == null) {
+                            // GeckoRuntime can only be initialized once per process
+                            //sRuntime = GeckoRuntime.create(context, runtimeSettings)
+                            sRuntime = GeckoRuntime.getDefault(context)
+                        }
+
+                        session.open(sRuntime)
+                        v.setSession(session)
+
+                        var vela = ""
+                        var windAnglesJson = JsonArray()
+                        var windSpeedsJson = JsonArray()
+                        var stimeJson = JsonArray()
+                        var windAngle = arrayListOf("-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1")
+                        var windSpeed = arrayListOf("-1", "-1", "-1", "-1", "-1", "-1", "-1")
+                        var stime = ArrayList<Any>()
+
+                        stimeVelocita.keySet().forEach {
+                            vela = it
+                            windAnglesJson =
+                                stimeVelocita.getAsJsonObject(it).getAsJsonArray("angoliVento")
+                            windSpeedsJson =
+                                stimeVelocita.getAsJsonObject(it).getAsJsonArray("velocitaVento")
+                            stimeJson = stimeVelocita.getAsJsonObject(it)
+                                .getAsJsonArray("stimeVelocitaBarca")
+
+                            println("Vela: $vela")
+                            println("WindAngles: $windAnglesJson")
+                            println("WindSpeeds: $windSpeedsJson")
+
+                            windSpeed.clear()
+                            for (jsonElement in windSpeedsJson) {
+                                when (jsonElement) {
+                                    is JsonElement -> {
+                                        windSpeed.add(jsonElement.toString())
+                                    }
+                                }
+                            }
+
+                            windAngle.clear()
+                            for (jsonElement in windAnglesJson) {
+                                when (jsonElement) {
+                                    is JsonElement -> {
+                                        windAngle.add(jsonElement.toString())
+                                    }
+                                }
+                            }
+
+                            stime.clear()
+                            for (jsonArray in stimeJson) {
+                                when (jsonArray) {
+                                    is JsonArray -> {
+                                        stime.add(jsonArray.toString())
+                                    }
+                                }
+                            }
+
+                            println("Stime json: $stimeJson")
+                            stime.forEach { println("Stime: $it") }
+                        }
+
+
+                        //val apkURI: URI = File(context.packageResourcePath).toURI()
+                        //val assetsURL = "jar:$apkURI!/assets/"
+                        //val myURL = assetsURL + "test2.html"
+
+                        var span = ""
+
+                        println("Numero vele: ${stimeVelocita.keySet().size}")
+                        if (stimeVelocita.keySet().size > 1) {
+                            span =
+                                "<span style=\"display:block; height: 100px; padding: 400px;\"></span>"
+                        }
+
+
+                        val total = """
+                            <!DOCTYPE html>
+<html lang="it">
+   <head>
+      <title>Page Title</title>
+      <link rel="stylesheet" href='style.css'>
+      <style>
+         body, html {
+         height: 100%;
+         margin: 0;
+         display: flex;
+         justify-content: center;
+         align-items: center;
+         background-color: rgb(170, 211, 223);
+         }
+         .centered-div {
+         width: 600px;
+         height: 600px;
+         background-color: lightgray;
+         text-align: center;
+         }
+         .container {
+         display: flex;
+         flex-direction: column; /* Arrange children in a column */
+         justify-content: center; /* Center children vertically */
+         align-items: center; /* Center children horizontally */
+         height: 100vh; /* Full height of the viewport */
+         width: 100%; /* Full width of the viewport */
+         box-sizing: border-box;
+         }
+         .grafico-polare {
+         background-color: lightblue;
+         padding: 20px;
+         margin: 10px 0; /* To separate multiple divs vertically */
+         }
+      </style>
+      <script src="https://cdn.plot.ly/plotly-2.25.2.min.js"></script>
+      <script>console.log("Test = Prova1");</script>
+   </head>
+   <body>
+      <div id='container' class="container">
+         $span
+      </div>
+      <div id='stime' style="display:none" >
+         $stimeVelocita    
+      </div>
+      <script>
+         console.log("script");
+         var ok = document.getElementById("stime").innerHTML;
+         draw(JSON.parse(ok));
+         function draw(data) {
+             var colori = ["blue", "red", "green", "orangered", "teal", "black", "purple", "orange", "royalblue", "springgreen", "deeppink"];
+             var jsonObject = data;    
+             console.log(typeof jsonObject);
+             console.log(jsonObject);
+         
+             const keys = Object.keys(jsonObject);
+             console.log(keys);
+             
+              keys.forEach((key) => {
+                 var vela = key;
+                 var velocitaVento = jsonObject[key]["velocitaVento"];
+                 var angoliVento = jsonObject[key]["angoliVento"];
+                 var sizeVelocita = velocitaVento.length;
+                 var sizeAngoli = angoliVento.length;
+         
+                 var angoloVento = angoliVento;
+                 var i, j;
+                 var dati = [];
+                 for (j = 0; j < sizeVelocita; j++) {
+                     var temp = [];
+                     for (i = 0; i < sizeAngoli; i++) {
+                         temp[i] = jsonObject[key]["stimeVelocitaBarca"][i][j].toFixed(2);
+                     }
+                     var data = {
+                         r: temp,
+                         theta: angoloVento,
+                         type: "scatterpolar",
+                         line: {
+                             color: colori[j],
+                             width: 3,
+                         },
+                         marker: {
+                             size: 10,
+                         },
+                         name: velocitaVento[j] + "kn",
+                     };
+                     dati[j] = data
+                 }
+                 console.log(dati);        
+                 var config = {
+                     displayModeBar: false,
+                     staticPlot: true,
+                 };
+                 var layout = {
+                     polar: {
+                         bgcolor: 'rgb(137, 185, 199)',
+                         radialaxis: {
+                             angle: 90,
+                             range: [2, 4, 6, 8, 10],
+                             tickfont: {
+                                 size: 26,
+                             },
+                             startangle: 45,
+                         },
+                         angularaxis: {
+                             tickmode: "array",
+                             tickvals: [0, 45, 52, 60, 75, 90, 110, 120, 135, 150, 165, 180],
+                             ticktext: [0, 45, 52, 60, 75, 90, 110, 120, 135, 150, 165, 180].map((angle) => angle + "\u00B0"),
+                             tickfont: {
+                                 size: 26,
+                             },
+                             direction: "counterclockwise",
+                             constrain: "domain",
+                         },
+                         sector: [-90, 90],
+                     },
+                     showlegend: false,
+                     paper_bgcolor: 'rgb(170, 211, 223)',
+                     width: 700,
+                     height: 700,
+                     margin: {
+                         t: 0,
+                         b: 0,
+                         l: 10,
+                         r: 0,
+                     },
+         
+                 };
+                 
+                 var grafico = document.createElement("div");
+                 var title = document.createElement("h1");
+                 title.innerHTML = key;
+                 grafico.className = "grafico-polare";
+                 document.getElementById("container").appendChild(title);
+                 document.getElementById("container").appendChild(grafico);
+                 Plotly.newPlot(grafico, dati, layout, config);
+                 ruotaGrafico(grafico);
+              
+              });
+              function ruotaGrafico(graficoNuovo) {
+                 var angolare = graficoNuovo._fullLayout.polar.angularaxis;
+                 var nuovaDirezione = angolare.direction === "clockwise" ? "counterclockwise" : "clockwise";
+                 Plotly.relayout(graficoNuovo, {
+                     "polar.angularaxis.direction": nuovaDirezione
+                 });
+             }
+                 
+             
+             
+         }    
+      </script>
+   </body>
+</html>           
+        """
+
+
+                        session.load(GeckoSession.Loader().data(total, "text/html"))
+
+                        //session.load(GeckoSession.Loader().uri(myURL))
+
+
+                        v
+
+                    }, update = { v ->
+                    })
             }
         }
     }
 
 }
 
-class PolarChartData(windAngles: List<Float>, windSpeeds: List<Float>)
+fun createDiv(id: String, content: String): String {
+
+    return "<div id=$id>$content</div>"
+
+}
+fun readAssetFile(context: Context, fileName: String): String {
+    return context.assets.open(fileName).use { inputStream ->
+        BufferedReader(InputStreamReader(inputStream)).use { reader ->
+            reader.readText()
+        }
+    }
+}
+
+
+
+
+
+
+
