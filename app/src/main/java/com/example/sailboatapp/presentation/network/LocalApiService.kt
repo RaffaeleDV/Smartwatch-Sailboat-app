@@ -1,6 +1,6 @@
 package com.example.sailboatapp.presentation.network
 
-import com.example.sailboatapp.presentation.ui.screen.BASE_URL
+import com.example.sailboatapp.presentation.ui.screen.raspberryIp
 import com.google.gson.JsonObject
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -9,21 +9,24 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 
-private const val SOCKET_BASE_URL = "8080"
+private const val SOCKET_BASE_URL = "8080" //webserver websockify
+
+private const val SOCKET_NMEA_FORWARDER = "8000" //webserver nmea forwarder
 
 private const val BASE_URL_NMEA_FORWARDER =
     "http://192.168.178.48" //Websocket
-private const val SOCKET_NMEA_FORWARDER = "8000"
+
+
 
 
 private val retrofit = Retrofit.Builder()
     .addConverterFactory(GsonConverterFactory.create())
-    .baseUrl("http://$BASE_URL:$SOCKET_BASE_URL/")
+    .baseUrl("http://$raspberryIp:$SOCKET_BASE_URL/")
     .build()
 
 private val retrofitNmeaForwarder = Retrofit.Builder()
     .addConverterFactory(ScalarsConverterFactory.create())
-    .baseUrl("http://$BASE_URL:$SOCKET_NMEA_FORWARDER/")
+    .baseUrl("http://$raspberryIp:$SOCKET_NMEA_FORWARDER/")
     .build()
 
 interface LocalApiService{

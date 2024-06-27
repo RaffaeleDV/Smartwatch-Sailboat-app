@@ -529,13 +529,13 @@ fun Map(
 
             if (shipPosition.latitude != 0.0 && resetCameraCount <= 3) {
                 println("reset camera remote: $shipPosition")
-                cameraPositionState.move(
+                /*cameraPositionState.move(
                     CameraUpdateFactory.newCameraPosition(
                         CameraPosition.fromLatLngZoom(
                             shipPosition, cameraZoom
                         )
                     )
-                )
+                )*/
                 resetCameraCount++
                 println("reset camera count: $resetCameraCount")
             }

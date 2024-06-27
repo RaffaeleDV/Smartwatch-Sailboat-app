@@ -76,7 +76,10 @@ enum class ConnectionState {
     Local, Remote, Loading
 }
 
-var BASE_URL = "192.168.178.48" //Raspberry ip
+var raspberryIp = "192.168.178.48" //Raspberry ip
+var websockifySocket = ""
+var nmeaForwarderSocket = ""
+
 
 @Composable
 fun Homepage(
@@ -85,7 +88,7 @@ fun Homepage(
     onSwipeChange: (Boolean) -> Unit
 ) {
 
-    println("Base url: $BASE_URL")
+    println("Base url: $raspberryIp")
 
     onSwipeChange(true)
 
@@ -352,7 +355,7 @@ fun Homepage(
                     value = textState,
                     onValueChange = {
                         textState = it
-                        BASE_URL = it
+                        raspberryIp = it
                     },
                     textStyle = TextStyle.Default,
                     singleLine = true,

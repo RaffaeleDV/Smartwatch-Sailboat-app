@@ -1,5 +1,6 @@
 package com.example.sailboatapp.presentation.ui.screen
 
+import android.os.Build
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -206,7 +207,7 @@ class LocalViewModel : ViewModel() {
 
     fun getNmeaLocal() {
         val client = OkHttpClient()
-        val request = Request.Builder().url("ws://$BASE_URL:8080").get().build()
+        val request = Request.Builder().url("ws://$raspberryIp:8080").get().build()
         val listener = LocalWebSocketListener { bytes ->
             viewModelScope.launch {
                 _data.value = processData(bytes) // Update the state with the received data
@@ -220,7 +221,11 @@ class LocalViewModel : ViewModel() {
     }
 
     private fun processData(bytes: ByteString): HashMap<String, String> {
-        return readNMEA(String(Base64.getDecoder().decode(bytes.base64())))
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            readNMEA(String(Base64.getDecoder().decode(bytes.base64())))
+        } else {
+            readNMEA(String(android.util.Base64.decode(bytes.base64(), android.util.Base64.DEFAULT)))
+        }
     }
 
 

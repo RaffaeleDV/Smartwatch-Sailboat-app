@@ -6,13 +6,13 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 
-private const val BASE_URL = "bruce.altervista.org"
+private const val BASE_URL_REMOTE = "bruce.altervista.org"
 
 private val retrofit =
     Retrofit
         .Builder()
         .addConverterFactory(ScalarsConverterFactory.create())
-        .baseUrl("https://$BASE_URL/")
+        .baseUrl("https://$BASE_URL_REMOTE/")
         .build()
 
 interface RemoteApiService {

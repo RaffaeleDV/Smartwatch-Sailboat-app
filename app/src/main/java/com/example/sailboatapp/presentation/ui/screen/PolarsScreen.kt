@@ -26,7 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -39,7 +38,6 @@ import androidx.wear.compose.foundation.lazy.AutoCenteringParams
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.Button
-import androidx.wear.compose.material.HorizontalPageIndicator
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.PageIndicatorState
@@ -53,7 +51,6 @@ import androidx.wear.compose.material.dialog.Dialog
 import com.example.sailboatapp.R
 import com.google.gson.Gson
 import com.google.gson.JsonArray
-import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoRuntimeSettings
@@ -451,8 +448,8 @@ fun Polars(navController: NavHostController) {
 
                         if (sRuntime == null) {
                             // GeckoRuntime can only be initialized once per process
-                            //sRuntime = GeckoRuntime.create(context, runtimeSettings)
-                            sRuntime = GeckoRuntime.getDefault(context)
+                            sRuntime = GeckoRuntime.create(context, runtimeSettings)
+                            //sRuntime = GeckoRuntime.getDefault(context)
                         }
 
                         session.open(sRuntime)
@@ -523,6 +520,9 @@ fun Polars(navController: NavHostController) {
                         //val assetsURL = "jar:$apkURI!/assets/"
                         //val myURL = assetsURL + "test2.html"
 
+                        //var file = readAssetFile(context, "plotly-2.25.2.min.js")
+                        //println("File: $file ${file.length}")
+
                         var span = ""
 
                         println("Numero vele: ${stimeVelocita.keySet().size}")
@@ -531,6 +531,32 @@ fun Polars(navController: NavHostController) {
                                 "<span style=\"display:block; height: 100px; padding: 400px;\"></span>"
                         }
 
+                        //<script src="https://cdn.plot.ly/plotly-2.25.2.min.js"></script>
+
+                        val test = """
+                             <!DOCTYPE html>
+<html>
+<head>
+<title>Page Title</title>
+</head>
+<style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color:  rgb(170, 211, 223);
+        }
+    </style>
+<body>
+
+<h1>This is a Heading</h1>
+<p>This is a paragraph.</p>
+
+</body>
+</html> 
+                        """
 
                         val total = """
                             <!DOCTYPE html>
@@ -568,7 +594,7 @@ fun Polars(navController: NavHostController) {
          margin: 10px 0; /* To separate multiple divs vertically */
          }
       </style>
-      <script src="https://cdn.plot.ly/plotly-2.25.2.min.js"></script>
+      <script src="http://$raspberryIp:8080/script/plotly-2.25.2.min.js"></script>
       <script>console.log("Test = Prova1");</script>
    </head>
    <body>
@@ -698,6 +724,45 @@ fun Polars(navController: NavHostController) {
    </body>
 </html>           
         """
+
+                        val test2 = """
+                            <!DOCTYPE html>
+<html lang="it">
+   <head>
+      <title>Page Title</title>
+      <link rel="stylesheet" href='style.css'>
+      <style>
+         body, html {
+         height: 100%;
+         margin: 0;
+         display: flex;
+         justify-content: center;
+         align-items: center;
+         background-color: rgb(170, 211, 223);
+         }         
+      </style>
+      <script src="http://$raspberryIp:8080/script/plotly-2.25.2.min.js"></script>
+      <script>console.log("Test = Prova1");</script>
+   </head>
+   <body>
+      <div id='container' class="container">
+         $span
+         <h1>Test</h1>
+      </div>
+      <div id='stime' style="display:none" >
+         $stimeVelocita    
+      </div>
+      <script>
+         console.log("script");
+         var stime = document.getElementById("stime").innerHTML;
+         var dati = JSON.parse(stime);
+         var key = Object.keys(dati);          
+         
+      </script>
+   </body>
+</html>           
+        """
+
 
 
                         session.load(GeckoSession.Loader().data(total, "text/html"))
