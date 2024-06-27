@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.wear.compose.foundation.lazy.AutoCenteringParams
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.Button
@@ -61,6 +63,8 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 
 
+
+
 @Composable
 fun Polars(navController: NavHostController) {
 
@@ -68,7 +72,7 @@ fun Polars(navController: NavHostController) {
         mutableStateOf(false)
     }
     var polarString by remember {
-        mutableStateOf("Inizia Registrazione")
+        mutableStateOf("load")
     }
 
     val listState = rememberScalingLazyListState()
@@ -109,6 +113,25 @@ fun Polars(navController: NavHostController) {
     val localViewModel: LocalViewModel = viewModel()
     val remoteViewModel: RemoteViewModel = viewModel()
 
+    //recInfo local
+    val recInfoUiState: RecInfoState = localViewModel.recInfoState
+
+    when (recInfoUiState) {
+        is RecInfoState.Error -> println("Error recInfo local")
+        is RecInfoState.Loading -> println("Loading recInfo local")
+        is RecInfoState.Success -> {
+            val result = (localViewModel.recInfoState as RecInfoState.Success).infoRec
+            println("Success: RecInfo local $result")
+            if(result == "true"){
+                polarRecState = true
+                polarString = "Termina"
+            }else{
+                polarRecState = false
+                polarString = "Inizia registrazione"
+            }
+        }
+    }
+
     //Stime velocita local
     val stimeVelocitaUiState: StimeVelocitaUiState = localViewModel.stimeVelocitaUiState
 
@@ -116,14 +139,19 @@ fun Polars(navController: NavHostController) {
         is StimeVelocitaUiState.Error -> println("Error stime velocita local")
         is StimeVelocitaUiState.Loading -> println("Loading stime velocita local")
         is StimeVelocitaUiState.Success -> {
-
+            connectionState = ConnectionState.Local
             var result =
                 (localViewModel.stimeVelocitaUiState as StimeVelocitaUiState.Success).stimeVelocita
             println("Success: Stime velocita local $result")
 
             stimeVelocita = result
-            /*result.keySet().forEach{
-            }*/
+            result.keySet().forEach{
+                if(it == "inProgress"){
+                    println("Calcolo in corso")
+                }
+
+
+            }
             //println("keyset = " + result.keySet().toString())
             //stimeVelocita = Gson().fromJson(result, Array<JsonObject>::class.java)
             //println("Stime velocita: $stimeVelocita")
@@ -162,17 +190,18 @@ fun Polars(navController: NavHostController) {
         }
     }, timeText = {
         TimeText()
-    }, pageIndicator = {
+    }/*, pageIndicator = {
         HorizontalPageIndicator(pageIndicatorState = pageIndicatorState)
-    }) {
+    }*/) {
 
         ScalingLazyColumn(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             state = listState,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
+            autoCentering = AutoCenteringParams(itemIndex = 3),
         ) {
-            item {
+            item(10) {
                 Text(
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
@@ -180,23 +209,54 @@ fun Polars(navController: NavHostController) {
                     text = "Polari"
                 )
             }
-            item { Spacer(modifier = Modifier.height(30.dp)) }
-            item {
-                Button(//registra button
-                    onClick = {
-                        if (polarRecState) {
-                            polarRecState = false
-                            polarString = "Inizia registrazione"
-                        } else {
-                            polarRecState = true
-                            polarString = "Termina"
-                            showDialog = true
+            println("connectionState = $connectionState")
+            if(connectionState == ConnectionState.Local){
+                item { Spacer(modifier = Modifier.height(20.dp)) }
+                item {
+                    Button(//registra button
+                        onClick = {
+                            if (polarRecState) {
+                                polarRecState = false
+                                localViewModel.recPolars("")
+                                polarString = "Inizia registrazione"
+                            } else {
+                                polarRecState = true
+                                //polarString = "Termina"
+                                showDialog = true
+                            }
+                        }, modifier = Modifier
+                            .height(30.dp)
+                            .width(150.dp)
+                            //.alpha(if (connectionState == ConnectionState.Local) 1f else 0f)
+                    ) {
+                        Text(polarString)
+                    }
+                }
+                item { Spacer(modifier = Modifier.height(30.dp)) }
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Button(//Calcola button
+                            onClick = { localViewModel.calculatePolars() },
+                            modifier = Modifier
+                                .height(30.dp)
+                                .width(70.dp)
+                                //.alpha(if (connectionState == ConnectionState.Local) 1f else 0f)
+                        ) {
+                            Text("Calcola")
                         }
-                    }, modifier = Modifier
-                        .height(30.dp)
-                        .width(150.dp)
-                ) {
-                    Text(polarString)
+                        Spacer(modifier = Modifier.width(20.dp))
+                        Button(//Clear button
+                            onClick = { localViewModel.clearPolars() },
+                            modifier = Modifier
+                                .height(30.dp)
+                                //.alpha(if (connectionState == ConnectionState.Local) 1f else 0f)
+                        ) {
+                            Text("Clean")
+                        }
+                    }
                 }
             }
             item { Spacer(modifier = Modifier.height(30.dp)) }
@@ -349,6 +409,11 @@ fun Polars(navController: NavHostController) {
                 Button(
                     onClick = {
                         showDialog = false
+                        println("Text= $textState")
+                        localViewModel.recPolars(textState)
+                        if(textState != ""){
+                            polarString = "Termina"
+                        }
                     }, modifier = Modifier.size(30.dp)
                 ) {
                     Icon(
@@ -401,7 +466,15 @@ fun Polars(navController: NavHostController) {
                         var windSpeed = arrayListOf("-1", "-1", "-1", "-1", "-1", "-1", "-1")
                         var stime = ArrayList<Any>()
 
-                        stimeVelocita.keySet().forEach {
+                        stimeVelocita.keySet().forEach{
+                            if(it == "inProgress"){
+                                println("Calcolo in corso")
+                            }
+
+
+                        }
+
+                        /*stimeVelocita.keySet().forEach {
                             vela = it
                             windAnglesJson =
                                 stimeVelocita.getAsJsonObject(it).getAsJsonArray("angoliVento")
@@ -443,7 +516,7 @@ fun Polars(navController: NavHostController) {
 
                             println("Stime json: $stimeJson")
                             stime.forEach { println("Stime: $it") }
-                        }
+                        }*/
 
 
                         //val apkURI: URI = File(context.packageResourcePath).toURI()
@@ -507,8 +580,19 @@ fun Polars(navController: NavHostController) {
       </div>
       <script>
          console.log("script");
-         var ok = document.getElementById("stime").innerHTML;
-         draw(JSON.parse(ok));
+         var stime = document.getElementById("stime").innerHTML;
+         var dati = JSON.parse(stime);
+         var key = Object.keys(dati);
+         if(key == "inProgress"){             
+             var title = document.createElement("h1");
+             document.getElementById("container").appendChild(title);
+             title.innerHTML = "Calcolo in corso";
+             location.reload();
+            
+         }else{
+             draw(JSON.parse(stime));
+         }
+         
          function draw(data) {
              var colori = ["blue", "red", "green", "orangered", "teal", "black", "purple", "orange", "royalblue", "springgreen", "deeppink"];
              var jsonObject = data;    

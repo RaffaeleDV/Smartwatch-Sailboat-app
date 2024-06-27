@@ -98,7 +98,7 @@ fun Homepage(
     val localViewModel: LocalViewModel = viewModel()
 
     var rafficaUiState: RafficaUiState = localViewModel.rafficaUiState
-    var raffica: Raffica = Raffica("", "", "")
+    var raffica = Raffica("", "", "")
     when (rafficaUiState) {
         is RafficaUiState.Error -> println("Error local raffica connection")
         is RafficaUiState.Loading -> println("Loading local raffica connection")

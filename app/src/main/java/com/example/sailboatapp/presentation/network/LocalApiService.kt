@@ -4,14 +4,15 @@ import com.example.sailboatapp.presentation.ui.screen.BASE_URL
 import com.google.gson.JsonObject
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.converter.scalars.ScalarsConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 
 
 private const val SOCKET_BASE_URL = "8080"
 
-/*private const val BASE_URL_NMEA_FORWARDER =
-    "http://192.168.178.48" //Websocket*/
+private const val BASE_URL_NMEA_FORWARDER =
+    "http://192.168.178.48" //Websocket
 private const val SOCKET_NMEA_FORWARDER = "8000"
 
 
@@ -21,7 +22,7 @@ private val retrofit = Retrofit.Builder()
     .build()
 
 private val retrofitNmeaForwarder = Retrofit.Builder()
-    //.addConverterFactory(GsonConverterFactory.create())
+    .addConverterFactory(ScalarsConverterFactory.create())
     .baseUrl("http://$BASE_URL:$SOCKET_NMEA_FORWARDER/")
     .build()
 
@@ -36,6 +37,17 @@ interface LocalApiService{
 
     @GET("ancora")
     suspend fun setAnchor(@Query("latitudine")latitude : String, @Query("longitudine")longitude : String, @Query("ancorato")anchored : String)
+
+    @GET("ancora?pulsanteCalcola=true")
+    suspend fun calculatePolars()
+    @GET("ancora")
+    suspend fun recPolars(@Query("vele") sails : String)
+    @GET("ancora?info=true")
+    suspend fun recInfo() : String
+    @GET("ancora?pulsanteClear=true")
+    suspend fun clearPolars()
+
+
 }
 
 object LocalApi{

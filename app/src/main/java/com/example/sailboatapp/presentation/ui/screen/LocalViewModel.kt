@@ -45,6 +45,12 @@ sealed interface StimeVelocitaUiState {
     object Error : StimeVelocitaUiState
     object Loading : StimeVelocitaUiState
 }
+
+sealed interface RecInfoState {
+    data class Success(val infoRec: String) : RecInfoState
+    object Error : RecInfoState
+    object Loading : RecInfoState
+}
 class LocalViewModel : ViewModel() {
     /** The mutable State that stores the status of the most recent request */
     private val _data = MutableStateFlow<HashMap<String, String>>(HashMap<String, String>())
@@ -56,6 +62,8 @@ class LocalViewModel : ViewModel() {
     var setAnchorUiState: SetAnchorLocalUiState by mutableStateOf(SetAnchorLocalUiState.Loading)
         private set
     var stimeVelocitaUiState: StimeVelocitaUiState by mutableStateOf(StimeVelocitaUiState.Loading)
+        private set
+    var recInfoState: RecInfoState by mutableStateOf(RecInfoState.Loading)
         private set
 
     /**
@@ -76,6 +84,7 @@ class LocalViewModel : ViewModel() {
                 getRaffica()
                 getAnchor()
                 getStimeVelocita()
+                recInfo()
                 delay(5000) // Delay for 5 seconds
             }
         }
@@ -87,7 +96,6 @@ class LocalViewModel : ViewModel() {
                 //println("Try raffica")
 
                 val result = LocalApi.retrofitService.getRaffica()
-
                 //println("Raffica vel: "+ result.velVento)
                 RafficaUiState.Success(
                     result
@@ -102,7 +110,6 @@ class LocalViewModel : ViewModel() {
         viewModelScope.launch {
             stimeVelocitaUiState = try {
                 //println("Try raffica")
-
                 val result = LocalApi.retrofitService.getStimeVelocita()
 
                 //println("Raffica vel: "+ result.velVento)
@@ -128,6 +135,57 @@ class LocalViewModel : ViewModel() {
                 )
             } catch (e: IOException) {
                 GetAnchorLocalUiState.Error
+            }
+        }
+    }
+
+    fun calculatePolars() {
+        viewModelScope.launch {
+            try {
+                val result = LocalApi.retrofitNmeaForwarderService.calculatePolars()
+                println("calculatePolars: $result")
+
+            } catch (e: IOException) {
+
+            }
+        }
+    }
+
+    fun clearPolars() {
+        viewModelScope.launch {
+            try {
+                val result = LocalApi.retrofitNmeaForwarderService.clearPolars()
+                println("clearPolars: $result")
+
+            } catch (e: IOException) {
+
+            }
+        }
+    }
+
+    fun recPolars(sails : String) {
+        viewModelScope.launch {
+            try {
+                val result = LocalApi.retrofitNmeaForwarderService.recPolars(sails)
+                println("recPolars: $result")
+
+            } catch (e: IOException) {
+
+            }
+        }
+    }
+    fun recInfo() {
+        viewModelScope.launch {
+            try {
+                //println("recInfo")
+                val result = LocalApi.retrofitNmeaForwarderService.recInfo()
+                recInfoState = RecInfoState.Success(
+                    result
+                )
+                println("recInfo: $result")
+            } catch (e: IOException) {
+                recInfoState = RecInfoState.Error
+
             }
         }
     }

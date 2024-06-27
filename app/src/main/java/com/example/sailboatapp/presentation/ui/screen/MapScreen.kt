@@ -826,8 +826,6 @@ fun Map(
                     backgroundColor = Color(orange), // Background color
                     contentColor = Color.Black
                 ), modifier = Modifier
-                    //.absoluteOffset { IntOffset(160, 320) }
-                    //.offset(70.dp, 160.dp)
                     .size(30.dp)
                     .alpha(if (connectionState == ConnectionState.Local && directionButtonVisibility) 1f else 0f)
                     .constrainAs(bottomButton) {
@@ -843,7 +841,7 @@ fun Map(
                 )
             }
             Button(
-//Reset position
+            //Reset position
                 onClick = {
                     if (shipPosition.latitude != 0.0) {
                         println("reset camera button: $shipPosition")
