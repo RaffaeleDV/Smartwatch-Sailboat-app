@@ -1,6 +1,7 @@
 package com.example.sailboatapp.presentation.ui.screen
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -87,7 +89,17 @@ const val WEBSOCKIFY_SOCKET_DEFAULT = "8080"
 var raspberryIp = RASPBERRY_IP_DEFAULT //Raspberry ip
 var websockifySocket = WEBSOCKIFY_SOCKET_DEFAULT
 
+fun saveString(context: Context, key: String, value: String) {
+    val sharedPreferences: SharedPreferences = context.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
+    val editor: SharedPreferences.Editor = sharedPreferences.edit()
+    editor.putString(key, value)
+    editor.apply()
+}
 
+fun getString(context: Context, key: String): String? {
+    val sharedPreferences: SharedPreferences = context.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
+    return sharedPreferences.getString(key, null)
+}
 
 @Composable
 fun Homepage(
@@ -98,7 +110,25 @@ fun Homepage(
 
     onSwipeChange(false)
 
+    val context = LocalContext.current
+    val savedIp = getString(LocalContext.current, "ip")
+    println("Saved IP= $savedIp")
+
+    if(savedIp != null && savedIp != ""){
+        raspberryIp = savedIp
+    }
+
+    val savedSocket = getString(LocalContext.current, "socket")
+    println("Saved socket= $savedIp")
+
+    if(savedSocket != null && savedIp != ""){
+        websockifySocket = savedSocket
+    }
+
     println("Base url: $raspberryIp")
+    println("Base socket: $websockifySocket")
+
+
 
     var lastVelVento = "0.0"
     var lastMaxWindSpeed = "0.0"
@@ -155,7 +185,6 @@ fun Homepage(
     }
 
     var showDialog by remember { mutableStateOf(false) }
-
 
     Scaffold(modifier = Modifier
         .fillMaxWidth()
@@ -361,7 +390,13 @@ fun Homepage(
                         value = textIp,
                         onValueChange = {
                             textIp = it
-                            raspberryIp = it
+                            if(textIp == "0"){
+                                raspberryIp = RASPBERRY_IP_DEFAULT
+                                saveString(context, "ip", RASPBERRY_IP_DEFAULT)
+                            }else {
+                                raspberryIp = it
+                                saveString(context, "ip", raspberryIp)
+                            }
                         },
                         textStyle = TextStyle.Default,
                         singleLine = true,
@@ -383,10 +418,15 @@ fun Homepage(
                     BasicTextField(
                         modifier = Modifier,//.absoluteOffset { IntOffset(50,160) },
                         value = textSocket,
-
                         onValueChange = {
                             textSocket = it
-                            websockifySocket = it
+                            if(textSocket == "0"){
+                                websockifySocket = WEBSOCKIFY_SOCKET_DEFAULT
+                                saveString(context, "socket", WEBSOCKIFY_SOCKET_DEFAULT)
+                            }else {
+                                websockifySocket = it
+                                saveString(context, "socket", websockifySocket)
+                            }
                         },
                         //keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.),
                         textStyle = TextStyle.Default,
