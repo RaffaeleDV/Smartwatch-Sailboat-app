@@ -1,15 +1,11 @@
 package com.example.sailboatapp.presentation.network
 
-import com.example.sailboatapp.presentation.data.readNMEA
-
-import com.example.sailboatapp.presentation.ui.screen.checkLocalConnection
 import com.example.sailboatapp.presentation.ui.screen.setLocalConnection
 
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import okio.ByteString
-import java.util.Base64
 
 class LocalWebSocketListener(private val onMessageReceived: (ByteString) -> Unit) : WebSocketListener() {
     override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {

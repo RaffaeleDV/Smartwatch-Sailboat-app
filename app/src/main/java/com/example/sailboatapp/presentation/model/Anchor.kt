@@ -1,4 +1,4 @@
-package com.example.sailboatapp.presentation.network
+package com.example.sailboatapp.presentation.model
 
 import com.google.gson.annotations.SerializedName
 import kotlinx.serialization.SerialName

@@ -7,10 +7,10 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sailboatapp.presentation.data.readNMEA
-import com.example.sailboatapp.presentation.network.Anchor
+import com.example.sailboatapp.presentation.model.Anchor
 import com.example.sailboatapp.presentation.network.LocalApi
 import com.example.sailboatapp.presentation.network.LocalWebSocketListener
-import com.example.sailboatapp.presentation.network.Raffica
+import com.example.sailboatapp.presentation.model.Raffica
 import com.google.gson.JsonObject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -175,7 +175,7 @@ class LocalViewModel : ViewModel() {
             }
         }
     }
-    fun recInfo() {
+    private fun recInfo() {
         viewModelScope.launch {
             try {
                 //println("recInfo")
@@ -205,16 +205,15 @@ class LocalViewModel : ViewModel() {
         }
     }
 
-    fun getNmeaLocal() {
+    private fun getNmeaLocal() {
         val client = OkHttpClient()
-        val request = Request.Builder().url("ws://$raspberryIp:8080").get().build()
+        val request = Request.Builder().url("ws://$raspberryIp:$websockifySocket").get().build()
         val listener = LocalWebSocketListener { bytes ->
             viewModelScope.launch {
                 _data.value = processData(bytes) // Update the state with the received data
             }
         }
         val webSocket: WebSocket = client.newWebSocket(request, listener)
-
         //println(webSocket.request().body.toString())
 
         client.dispatcher.executorService.shutdown() // Optional: Clean up the client resources

@@ -14,6 +14,7 @@ import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.example.sailboatapp.presentation.ui.screen.Homepage
 import com.example.sailboatapp.presentation.ui.screen.Map
 import com.example.sailboatapp.presentation.ui.screen.Polars
+import com.example.sailboatapp.presentation.ui.screen.Test
 
 
 const val DEGREE_SYMBOL = "\u00B0"
@@ -41,12 +42,17 @@ fun SailboatApp() {
             }
         }
         composable("polars") {
-            Polars(navController)
+            Polars(navController, isSwippeEnabled) { newValues ->
+                isSwippeEnabled = newValues as Boolean
+            }
         }
         composable("map") {
             Map(navController, isSwippeEnabled) { newValues ->
                 isSwippeEnabled = newValues as Boolean
             }
+        }
+        composable("test") {
+            Test()
         }
     }
 }

@@ -1,9 +1,9 @@
 package com.example.sailboatapp.presentation.ui.screen
 
+import android.content.Context
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -29,6 +29,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.wear.compose.foundation.lazy.AutoCenteringParams
@@ -47,9 +50,10 @@ import androidx.wear.compose.material.VignettePosition
 import androidx.wear.compose.material.dialog.Dialog
 import com.example.sailboatapp.R
 import com.example.sailboatapp.presentation.data.readNMEA
-import com.example.sailboatapp.presentation.network.Raffica
+import com.example.sailboatapp.presentation.model.Raffica
 import com.example.sailboatapp.presentation.ui.DEGREE_SYMBOL
 import com.example.sailboatapp.presentation.ui.KNOT_SYMBOL
+
 
 class LocalConnection {
     var localConnectionState: Boolean = false
@@ -64,7 +68,7 @@ class LocalConnection {
 }
 
 var locCon = LocalConnection()
-fun checkLocalConnection(): Boolean {
+fun isConnectionLocal(): Boolean {
     return locCon.getConnectionState()
 }
 
@@ -73,12 +77,16 @@ fun setLocalConnection(state: Boolean) {
 }
 
 enum class ConnectionState {
-    Local, Remote, Loading
+    Local, Remote, Loading, Offline
 }
 
-var raspberryIp = "192.168.178.48" //Raspberry ip
-var websockifySocket = ""
-var nmeaForwarderSocket = ""
+const val  RASPBERRY_IP_DEFAULT = "192.168.178.48" //Raspberry ip default
+const val WEBSOCKIFY_SOCKET_DEFAULT = "8080"
+
+
+var raspberryIp = RASPBERRY_IP_DEFAULT //Raspberry ip
+var websockifySocket = WEBSOCKIFY_SOCKET_DEFAULT
+
 
 
 @Composable
@@ -88,9 +96,9 @@ fun Homepage(
     onSwipeChange: (Boolean) -> Unit
 ) {
 
-    println("Base url: $raspberryIp")
+    onSwipeChange(false)
 
-    onSwipeChange(true)
+    println("Base url: $raspberryIp")
 
     var lastVelVento = "0.0"
     var lastMaxWindSpeed = "0.0"
@@ -100,55 +108,42 @@ fun Homepage(
 
     val localViewModel: LocalViewModel = viewModel()
 
-    var rafficaUiState: RafficaUiState = localViewModel.rafficaUiState
+    //Raffica local
+    val rafficaUiState: RafficaUiState = localViewModel.rafficaUiState
     var raffica = Raffica("", "", "")
     when (rafficaUiState) {
         is RafficaUiState.Error -> println("Error local raffica connection")
         is RafficaUiState.Loading -> println("Loading local raffica connection")
         is RafficaUiState.Success -> {
             //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
+            connectionState = ConnectionState.Local
             println("Success: local connection Raffica")
             raffica = (localViewModel.rafficaUiState as RafficaUiState.Success).raffica
         }
     }
-
-    var nmeaData = localViewModel.data.collectAsState()
+    //Neam sentence local from websocket
+    val nmeaDataLocal = localViewModel.data.collectAsState()
     var nmeaDataRemote = HashMap<String, String>()
     connectionState = ConnectionState.Local
-    if (!checkLocalConnection()) {
+    //Neam sentence remote
+    if (!isConnectionLocal()) {
         val remoteViewModel: RemoteViewModel = viewModel()
         val remoteUiState: RemoteUiState = remoteViewModel.remoteUiState
         connectionState = ConnectionState.Remote
         when (remoteUiState) {
-            is RemoteUiState.Error -> println("Error remote connection")
+            is RemoteUiState.Error -> {
+                connectionState = ConnectionState.Offline
+                println("Error remote connection")
+            }
+
             is RemoteUiState.Loading -> println("Loading remote connection")
             is RemoteUiState.Success -> {
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
+                connectionState = ConnectionState.Remote
                 println("Success: Remote connection")
                 nmeaDataRemote =
                     readNMEA((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
             }
-        }
-    }
-
-    val maxPages = 3
-    val selectedPage by remember { mutableIntStateOf(1) }
-    var finalValue by remember { mutableIntStateOf(0) }
-
-    val animatedSelectedPage by animateFloatAsState(
-        targetValue = selectedPage.toFloat(), label = "",
-    ) {
-        finalValue = it.toInt()
-    }
-
-    val pageIndicatorState: PageIndicatorState = remember {
-        object : PageIndicatorState {
-            override val pageOffset: Float
-                get() = animatedSelectedPage - finalValue
-            override val selectedPage: Int
-                get() = finalValue
-            override val pageCount: Int
-                get() = maxPages
         }
     }
 
@@ -160,6 +155,7 @@ fun Homepage(
     }
 
     var showDialog by remember { mutableStateOf(false) }
+
 
     Scaffold(modifier = Modifier
         .fillMaxWidth()
@@ -212,17 +208,17 @@ fun Homepage(
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.secondary,
                     fontSize = 15.sp,
-                    text = (if (nmeaData.value["windSpeed"] == null) {
+                    text = (if (nmeaDataLocal.value["windSpeed"] == null) {
                         if (nmeaDataRemote["windSpeed"].isNullOrEmpty()) {
                             "$lastVelVento $KNOT_SYMBOL"
                         } else {
                             "${nmeaDataRemote["windSpeed"]!!} $KNOT_SYMBOL"
                         }
                     } else {
-                        if (nmeaData.value["windSpeed"]!! == "0.0") {
+                        if (nmeaDataLocal.value["windSpeed"]!! == "0.0") {
                             "$lastVelVento $KNOT_SYMBOL"
                         } else {
-                            lastVelVento = nmeaData.value["windSpeed"]!!
+                            lastVelVento = nmeaDataLocal.value["windSpeed"]!!
                             "$lastVelVento $KNOT_SYMBOL"
                         }
 
@@ -250,6 +246,8 @@ fun Homepage(
                         } else {
                             "${nmeaDataRemote["maxWindSpeed"]!!} $KNOT_SYMBOL"
                         }
+                    } else if (connectionState == ConnectionState.Offline) {
+                        "- $KNOT_SYMBOL"
                     } else {
                         if (raffica.velVento == "0.0") {
                             "$lastMaxWindSpeed $KNOT_SYMBOL"
@@ -275,19 +273,19 @@ fun Homepage(
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.secondary,
                     fontSize = 15.sp,
-                    text = (if (nmeaData.value["shipDirection"] == null) {
+                    text = (if (nmeaDataLocal.value["shipDirection"] == null) {
 
                         if (nmeaDataRemote["shipDirection"].isNullOrEmpty()) {
-                            "$lastShipDirection $DEGREE_SYMBOL"
+                            "$lastShipDirection$DEGREE_SYMBOL"
                         } else {
-                            "${nmeaDataRemote["shipDirection"]!!} $DEGREE_SYMBOL"
+                            "${nmeaDataRemote["shipDirection"]!!}$DEGREE_SYMBOL"
                         }
                     } else {
-                        if (nmeaData.value["shipDirection"]!! == "0.0") {
-                            "$lastShipDirection $DEGREE_SYMBOL"
+                        if (nmeaDataLocal.value["shipDirection"]!! == "0.0") {
+                            "$lastShipDirection$DEGREE_SYMBOL"
                         } else {
-                            lastShipDirection = nmeaData.value["shipDirection"]!!
-                            "$lastShipDirection $DEGREE_SYMBOL"
+                            lastShipDirection = nmeaDataLocal.value["shipDirection"]!!
+                            "$lastShipDirection$DEGREE_SYMBOL"
                         }
 
                     })
@@ -330,8 +328,7 @@ fun Homepage(
                     //Icon(painter = , contentDescription = )
                 }
             }
-
-            /*item {
+            item {
                 Button(//Test page button
                     onClick = { navController.navigate("test") },
                     modifier = Modifier.height(30.dp)
@@ -339,55 +336,89 @@ fun Homepage(
                 ) {
                     Text("Test")
                 }
-            }*/
+            }
         }
 
-        var textState by remember { mutableStateOf("") }
+        var textIp by remember { mutableStateOf("") }
+        var textSocket by remember { mutableStateOf("") }
         Dialog(showDialog = showDialog, onDismissRequest = { showDialog = false }) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
+            ScalingLazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .fillMaxHeight(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.SpaceAround,
+                autoCentering = AutoCenteringParams(itemIndex = 4),
+                //state = listState,
             ) {
-                Text(text = "IP raspberry: ")
-                Spacer(modifier = Modifier.height(10.dp))
-                BasicTextField(modifier = Modifier,//.absoluteOffset { IntOffset(50,160) },
-                    value = textState,
-                    onValueChange = {
-                        textState = it
-                        raspberryIp = it
-                    },
-                    textStyle = TextStyle.Default,
-                    singleLine = true,
-                    decorationBox = { innerTextField ->
-                        Row(
-                            modifier = Modifier
-                                .background(MaterialTheme.colors.primary)
-                                .padding(5.dp)
-                        ) {
-                            innerTextField()
+                item(10) { Text(text = "IP corrente:", fontSize = 10.sp) }
+                item { Text(text = "$raspberryIp:$websockifySocket", fontSize = 10.sp) }
+                item { Text(text = "IP raspberry: ") }
+                item { Spacer(modifier = Modifier.height(10.dp)) }
+                item {
+                    BasicTextField(
+                        modifier = Modifier,//.absoluteOffset { IntOffset(50,160) },
+                        value = textIp,
+                        onValueChange = {
+                            textIp = it
+                            raspberryIp = it
+                        },
+                        textStyle = TextStyle.Default,
+                        singleLine = true,
+                        decorationBox = { innerTextField ->
+                            Row(
+                                modifier = Modifier
+                                    .background(MaterialTheme.colors.primary)
+                                    .padding(5.dp)
+                            ) {
+                                innerTextField()
+                            }
                         }
-                    })
-                Spacer(modifier = Modifier.height(20.dp))
-                Button(
-                    onClick = {
-                        showDialog = false
-                    }, modifier = Modifier.size(30.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_action_done_icon),
-                        contentDescription = "Done",
-                        modifier = Modifier.size(25.dp)
                     )
+                }
+                item { Spacer(modifier = Modifier.height(10.dp)) }
+                item { Text(text = "Socket raspberry: ") }
+                item { Spacer(modifier = Modifier.height(10.dp)) }
+                item {
+                    BasicTextField(
+                        modifier = Modifier,//.absoluteOffset { IntOffset(50,160) },
+                        value = textSocket,
+
+                        onValueChange = {
+                            textSocket = it
+                            websockifySocket = it
+                        },
+                        //keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.),
+                        textStyle = TextStyle.Default,
+                        singleLine = true,
+                        decorationBox = { innerTextField ->
+                            Row(
+                                modifier = Modifier
+                                    .background(MaterialTheme.colors.primary)
+                                    .padding(5.dp)
+                            ) {
+                                innerTextField()
+                            }
+                        }
+                    )
+                }
+                item { Spacer(modifier = Modifier.height(20.dp)) }
+                item {
+                    Button(
+                        onClick = {
+                            showDialog = false
+                        }, modifier = Modifier.size(30.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_action_done_icon),
+                            contentDescription = "Done",
+                            modifier = Modifier.size(25.dp)
+                        )
+                    }
                 }
             }
         }
-    }/*Text(
-        modifier = Modifier.fillMaxWidth(),
-        textAlign = TextAlign.Center,
-        color = MaterialTheme.colors.primary,
-        text = stringResource(R.string.hello_world, greetingName)
-    )*/
+    }
 }
 
 

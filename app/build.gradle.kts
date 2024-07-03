@@ -61,6 +61,7 @@ dependencies {
     implementation(libs.activity.compose)
     implementation(libs.core.splashscreen)
     implementation(libs.constraintlayout)
+    implementation(libs.wear)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
@@ -111,13 +112,17 @@ dependencies {
 
     implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
 
-    implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
-
     implementation ("org.mozilla.geckoview:geckoview-omni:100.0.20220425210429")
+    //Openmaps
+    implementation ("org.osmdroid:osmdroid-android:6.1.18")
+    //DataStore
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    implementation ("org.nanohttpd:nanohttpd:2.3.1")
 
-    
+
+
+
+
 
 
 }

@@ -38,6 +38,7 @@ import androidx.wear.compose.foundation.lazy.AutoCenteringParams
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.Button
+import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.PageIndicatorState
@@ -49,6 +50,7 @@ import androidx.wear.compose.material.Vignette
 import androidx.wear.compose.material.VignettePosition
 import androidx.wear.compose.material.dialog.Dialog
 import com.example.sailboatapp.R
+import com.example.sailboatapp.presentation.orange
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -57,13 +59,18 @@ import org.mozilla.geckoview.GeckoRuntimeSettings
 import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoView
 import java.io.BufferedReader
+import java.io.File
 import java.io.InputStreamReader
-
-
+import java.net.URI
 
 
 @Composable
-fun Polars(navController: NavHostController) {
+fun Polars(
+    navController: NavHostController,
+    isSwippeEnabled: Boolean,
+    onSwipeChange: (Boolean) -> Unit
+) {
+    onSwipeChange(false)
 
     var polarRecState by remember {
         mutableStateOf(false)
@@ -73,30 +80,11 @@ fun Polars(navController: NavHostController) {
     }
 
     val listState = rememberScalingLazyListState()
-    var vignetteState by remember { mutableStateOf(VignettePosition.TopAndBottom) }
+    val vignetteState by remember { mutableStateOf(VignettePosition.TopAndBottom) }
 
-    val maxPages = 3
-    val selectedPage by remember { mutableIntStateOf(0) }
-    var finalValue by remember { mutableIntStateOf(0) }
 
-    val animatedSelectedPage by animateFloatAsState(
-        targetValue = selectedPage.toFloat(), label = "",
-    ) {
-        finalValue = it.toInt()
-    }
 
-    var pageIndicatorState: PageIndicatorState = remember {
-        object : PageIndicatorState {
-            override val pageOffset: Float
-                get() = animatedSelectedPage - finalValue
-            override val selectedPage: Int
-                get() = finalValue
-            override val pageCount: Int
-                get() = maxPages
-        }
-    }
-
-    var showVignette by remember {
+    val showVignette by remember {
         mutableStateOf(true)
     }
 
@@ -137,7 +125,7 @@ fun Polars(navController: NavHostController) {
         is StimeVelocitaUiState.Loading -> println("Loading stime velocita local")
         is StimeVelocitaUiState.Success -> {
             connectionState = ConnectionState.Local
-            var result =
+            val result =
                 (localViewModel.stimeVelocitaUiState as StimeVelocitaUiState.Success).stimeVelocita
             println("Success: Stime velocita local $result")
 
@@ -155,7 +143,7 @@ fun Polars(navController: NavHostController) {
         }
     }
 
-    if (!checkLocalConnection()) {
+    if (!isConnectionLocal()) {
         //Stime velocita remote
         val getstimeRemoteUiState: GetStimeRemoteUiState = remoteViewModel.getStimeRemoteUiState
         connectionState = ConnectionState.Remote
@@ -205,6 +193,27 @@ fun Polars(navController: NavHostController) {
                     color = MaterialTheme.colors.primary,
                     text = "Polari"
                 )
+            }
+            item { Spacer(modifier = Modifier.height(10.dp)) }
+            item {
+                Button(//Back Button
+                    onClick = {
+                        navController.navigate("homepage")
+
+                    }, colors = ButtonDefaults.buttonColors(
+                        //backgroundColor = Color(orange), // Background color
+                        contentColor = Color.Black
+                    ), modifier = Modifier
+                        //.size(30.dp)
+                        .height(30.dp)
+                        .width(50.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_action_back),
+                        contentDescription = "Back",
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
             }
             println("connectionState = $connectionState")
             if(connectionState == ConnectionState.Local){
@@ -455,13 +464,13 @@ fun Polars(navController: NavHostController) {
                         session.open(sRuntime)
                         v.setSession(session)
 
-                        var vela = ""
+                        /*var vela = ""
                         var windAnglesJson = JsonArray()
                         var windSpeedsJson = JsonArray()
                         var stimeJson = JsonArray()
                         var windAngle = arrayListOf("-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1")
                         var windSpeed = arrayListOf("-1", "-1", "-1", "-1", "-1", "-1", "-1")
-                        var stime = ArrayList<Any>()
+                        var stime = ArrayList<Any>()*/
 
                         stimeVelocita.keySet().forEach{
                             if(it == "inProgress"){
@@ -532,8 +541,17 @@ fun Polars(navController: NavHostController) {
                         }
 
                         //<script src="https://cdn.plot.ly/plotly-2.25.2.min.js"></script>
+                        //https://bruce.altervista.org/Client/script/plotly-2.25.2.min.js
 
-                        val test = """
+                        val libraryAddress : String
+
+                        if(isConnectionLocal()){
+                            libraryAddress = "http://$raspberryIp:$websockifySocket/script/plotly-2.25.2.min.js"
+                        }else{
+                            libraryAddress = "https://cdn.plot.ly/plotly-2.25.2.min.js"
+                        }
+
+                        /*val test = """
                              <!DOCTYPE html>
 <html>
 <head>
@@ -556,7 +574,7 @@ fun Polars(navController: NavHostController) {
 
 </body>
 </html> 
-                        """
+                        """*/
 
                         val total = """
                             <!DOCTYPE html>
@@ -594,7 +612,7 @@ fun Polars(navController: NavHostController) {
          margin: 10px 0; /* To separate multiple divs vertically */
          }
       </style>
-      <script src="http://$raspberryIp:8080/script/plotly-2.25.2.min.js"></script>
+      <script src="$libraryAddress"></script>
       <script>console.log("Test = Prova1");</script>
    </head>
    <body>
@@ -725,7 +743,7 @@ fun Polars(navController: NavHostController) {
 </html>           
         """
 
-                        val test2 = """
+               /*         val test2 = """
                             <!DOCTYPE html>
 <html lang="it">
    <head>
@@ -761,7 +779,7 @@ fun Polars(navController: NavHostController) {
       </script>
    </body>
 </html>           
-        """
+        """*/
 
 
 

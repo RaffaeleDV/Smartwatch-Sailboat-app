@@ -1,4 +1,4 @@
-package com.example.sailboatapp.presentation.network
+package com.example.sailboatapp.presentation.model
 
 import kotlinx.serialization.Serializable
 

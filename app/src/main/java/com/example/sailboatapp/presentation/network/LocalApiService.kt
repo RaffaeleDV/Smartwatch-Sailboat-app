@@ -1,6 +1,9 @@
 package com.example.sailboatapp.presentation.network
 
+import com.example.sailboatapp.presentation.model.Anchor
+import com.example.sailboatapp.presentation.model.Raffica
 import com.example.sailboatapp.presentation.ui.screen.raspberryIp
+import com.example.sailboatapp.presentation.ui.screen.websockifySocket
 import com.google.gson.JsonObject
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -9,19 +12,18 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 
-private const val SOCKET_BASE_URL = "8080" //webserver websockify
+//private const val SOCKET_BASE_URL = "8080" //webserver websockify
 
 private const val SOCKET_NMEA_FORWARDER = "8000" //webserver nmea forwarder
 
-private const val BASE_URL_NMEA_FORWARDER =
-    "http://192.168.178.48" //Websocket
+//private const val BASE_URL_NMEA_FORWARDER = "http://192.168.178.48" //Websocket
 
 
 
 
 private val retrofit = Retrofit.Builder()
     .addConverterFactory(GsonConverterFactory.create())
-    .baseUrl("http://$raspberryIp:$SOCKET_BASE_URL/")
+    .baseUrl("http://$raspberryIp:$websockifySocket/")
     .build()
 
 private val retrofitNmeaForwarder = Retrofit.Builder()
@@ -31,7 +33,7 @@ private val retrofitNmeaForwarder = Retrofit.Builder()
 
 interface LocalApiService{
     @GET("file.json")
-    suspend fun getRaffica(/*@Path("user")  user: String*/) : Raffica
+    suspend fun getRaffica() : Raffica
 
     @GET("ancora.json")
     suspend fun getAnchor() : Anchor
