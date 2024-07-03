@@ -665,12 +665,12 @@ fun Map(
         16,
         256,
         ".png",
-        arrayOf("http://' + $raspberryIp + ':8081/data/OAM-W1-8-EPmid9-13-J70/"),
+        arrayOf("http://$raspberryIp:8081/data/OAM-W1-8-EPmid9-13-J70/"),
         "© OpenStreetMap contributors"
     )
 
     if (isConnectionLocal()) {
-        tileSource = TileSourceFactory.MAPNIK
+        tileSource = localTileSource
     } else {
         tileSource = TileSourceFactory.MAPNIK
     }
