@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import com.example.sailboatapp.presentation.MainActivity
 import com.example.sailboatapp.presentation.ui.screen.Homepage
 import com.example.sailboatapp.presentation.ui.screen.Map
 import com.example.sailboatapp.presentation.ui.screen.Polars
@@ -22,7 +23,7 @@ const val KNOT_SYMBOL = "Kn"
 
 
 @Composable
-fun SailboatApp() {
+fun SailboatApp(mainActivity: MainActivity) {
 
     var isSwippeEnabled by remember { mutableStateOf(true) }
 
@@ -37,7 +38,7 @@ fun SailboatApp() {
         startDestination = "homepage"
     ) {
         composable("homepage") {
-            Homepage(navController, isSwippeEnabled) { newValues ->
+            Homepage(navController, isSwippeEnabled, mainActivity) { newValues ->
                 isSwippeEnabled = newValues as Boolean
             }
         }

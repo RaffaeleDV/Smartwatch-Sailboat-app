@@ -419,7 +419,7 @@ fun Map(
             //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
             println("Success: Local connection set anchor")
             val result = (localViewModel.setAnchorUiState as SetAnchorLocalUiState.Success).result
-            println("Result set anchor: $result")
+            println("Result set anchor local: $result")
         }
     }
 
@@ -433,7 +433,7 @@ fun Map(
             //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
             println("Success: Local connection get anchor")
             anchorLocal = (localViewModel.getAnchorUiState as GetAnchorLocalUiState.Success).anchor
-            println("Ancora locale: $anchorLocal")
+            println("Get Ancora locale: $anchorLocal")
             connectionState = ConnectionState.Local
         }
     }
@@ -443,16 +443,16 @@ fun Map(
         connectionState = ConnectionState.Remote
         when (anchorRemoteUiState) {
             is GetAnchorRemoteUiState.Error -> {
-                println("Error remote anchor")
+                println("Error remote get anchor")
             }
 
             is GetAnchorRemoteUiState.Loading -> {
-                println("Loading remote anchor")
+                println("Loading remote get anchor")
             }
 
             is GetAnchorRemoteUiState.Success -> {
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
-                println("Success: Remote connection anchor")
+                println("Success: Remote connection get anchor")
                 anchorRemote =
                     (remoteViewModel.getAnchorRemoteUiState as GetAnchorRemoteUiState.Success).anchor
                 println("Anchor remote: $anchorRemote")
@@ -532,7 +532,7 @@ fun Map(
             courseOverGround = nmeaDataRemote["courseOverGround"]!!.toDouble()
             speedOverGround = nmeaDataRemote["speedOverGround"]!!.toDouble()
 
-            println("Ancora remota: " + anchorRemoteObj.latitude + " " + anchorRemoteObj.longitude + " Ship: " + shipPosition.toString())
+            println("Anchor remote: " + anchorRemoteObj.latitude + " " + anchorRemoteObj.longitude + " Ship remote: " + shipPosition.toString())
             println(
                 "Anchor is distanced " + checkAnchorDistance(
                     LatLng(
@@ -585,7 +585,7 @@ fun Map(
             if (nmeaDataLocal.value["speedOverGround"] != null) {
                 speedOverGround = nmeaDataLocal.value["shipSpeed"]!!.toDouble()
             }
-            println("Ancora remota: " + anchorLocal.latitude + " " + anchorLocal.longitude + " Ship: " + shipPosition.toString())
+            println("Anchor local: " + anchorLocal.latitude + " " + anchorLocal.longitude + " Ship local: " + shipPosition.toString())
             println(
                 "Anchor is distanced " + checkAnchorDistance(
                     LatLng(
@@ -662,16 +662,21 @@ fun Map(
     val localTileSource = XYTileSource(
         "LocalServer",
         1,
-        16,
+        8,
         256,
         ".png",
-        arrayOf("http://$raspberryIp:8081/data/OAM-W1-8-EPmid9-13-J70/"),
+        arrayOf("http://$raspberryIp:8081/data/OAM-World-1-8-J80/"),
         "© OpenStreetMap contributors"
     )
 
+    var maxZoom = 13
+
     if (isConnectionLocal()) {
+        println("Local tiles")
+        maxZoom = 8
         tileSource = localTileSource
     } else {
+        println("Remote tiles")
         tileSource = TileSourceFactory.MAPNIK
     }
     Box(
@@ -732,8 +737,14 @@ fun Map(
                 .edgeSwipeToDismiss(state, 20.dp),
             factory = { ctx ->
                 MapView(ctx).apply {
+
                     mapView = this
                     this.maxZoomLevel = 13.0
+                    if (isConnectionLocal()) {
+                        println("Local zoom 8")
+                        this.maxZoomLevel = 8.0
+                    }
+
                     setTileSource(tileSource)
                     setMultiTouchControls(true)
                     setBuiltInZoomControls(false)

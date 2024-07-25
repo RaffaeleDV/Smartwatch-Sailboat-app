@@ -2,7 +2,6 @@ package com.example.sailboatapp.presentation.ui.screen
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -18,7 +17,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -31,9 +29,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.wear.compose.foundation.lazy.AutoCenteringParams
@@ -42,7 +37,6 @@ import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.material.PageIndicatorState
 import androidx.wear.compose.material.PositionIndicator
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
@@ -51,6 +45,7 @@ import androidx.wear.compose.material.Vignette
 import androidx.wear.compose.material.VignettePosition
 import androidx.wear.compose.material.dialog.Dialog
 import com.example.sailboatapp.R
+import com.example.sailboatapp.presentation.MainActivity
 import com.example.sailboatapp.presentation.data.readNMEA
 import com.example.sailboatapp.presentation.model.Raffica
 import com.example.sailboatapp.presentation.ui.DEGREE_SYMBOL
@@ -105,12 +100,14 @@ fun getString(context: Context, key: String): String? {
 fun Homepage(
     navController: NavHostController,
     isSwippeEnabled: Boolean,
+    mainActivity: MainActivity,
     onSwipeChange: (Boolean) -> Unit
 ) {
 
     onSwipeChange(false)
 
     val context = LocalContext.current
+
     val savedIp = getString(LocalContext.current, "ip")
     println("Saved IP= $savedIp")
 
@@ -278,7 +275,7 @@ fun Homepage(
                     } else if (connectionState == ConnectionState.Offline) {
                         "- $KNOT_SYMBOL"
                     } else {
-                        if (raffica.velVento == "0.0") {
+                        if (raffica.velVento == "0.0" || raffica.velVento == "") {
                             "$lastMaxWindSpeed $KNOT_SYMBOL"
                         } else {
                             lastMaxWindSpeed = raffica.velVento
@@ -357,13 +354,23 @@ fun Homepage(
                     //Icon(painter = , contentDescription = )
                 }
             }
-            item {
+            /*item {
                 Button(//Test page button
                     onClick = { navController.navigate("test") },
                     modifier = Modifier.height(30.dp)
                     //.width(150.dp)
                 ) {
                     Text("Test")
+                }
+            }*/
+            item {
+                Button(
+                    onClick = {
+                        mainActivity.finish()
+                    },
+                    modifier = Modifier.height(30.dp)
+                ) {
+                    Text(text = "Close App")
                 }
             }
         }

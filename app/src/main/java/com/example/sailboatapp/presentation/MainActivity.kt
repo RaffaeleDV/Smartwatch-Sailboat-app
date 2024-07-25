@@ -10,9 +10,6 @@ package com.example.sailboatapp.presentation
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.sailboatapp.presentation.ui.theme.SailboatappTheme
 import com.example.sailboatapp.presentation.ui.SailboatApp
@@ -26,11 +23,11 @@ class MainActivity : ComponentActivity() {
 
         super.onCreate(savedInstanceState)
 
-        setTheme(android.R.style.Theme_DeviceDefault)
+        //setTheme(android.R.style.Theme_DeviceDefault)
 
         setContent {
             SailboatappTheme{
-                SailboatApp()
+                SailboatApp(this)
 
             }
 
