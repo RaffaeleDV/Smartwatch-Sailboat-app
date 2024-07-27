@@ -12,7 +12,7 @@ private val retrofit =
     Retrofit
         .Builder()
         .addConverterFactory(ScalarsConverterFactory.create())
-        .baseUrl("https://$BASE_URL_REMOTE/")
+        .baseUrl("https://${ServerConfig.REMOTE_SERVER}/")
         .build()
 
 interface RemoteApiService {

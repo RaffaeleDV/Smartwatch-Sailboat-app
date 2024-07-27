@@ -3,6 +3,7 @@ package com.example.sailboatapp.presentation.ui.screen
 import android.annotation.SuppressLint
 import android.content.Context
 import android.media.MediaPlayer
+import android.util.Log
 import android.view.MotionEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -42,8 +42,9 @@ import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.dialog.Dialog
 import com.example.sailboatapp.R
-import com.example.sailboatapp.presentation.data.readNMEA
 import com.example.sailboatapp.presentation.model.Anchor
+import com.example.sailboatapp.presentation.network.ConnectionState
+import com.example.sailboatapp.presentation.network.connectionState
 import com.example.sailboatapp.presentation.orange
 import com.example.sailboatapp.presentation.red
 import com.example.sailboatapp.presentation.ui.DEGREE_SYMBOL
@@ -173,15 +174,20 @@ fun routeCalculator(
     var maxAngle = -1
 
     stimeVelocita.keySet().forEach {
+
+        if(it == "inProgress"){
+            return arrayOf(maxAngle.toString(), optimalSail, vMax.toString(), vMaxEff.toString())
+        }
+
         var vela = it
         var windAngles = stimeVelocita.getAsJsonObject(it).getAsJsonArray("angoliVento")
         var windSpeeds = stimeVelocita.getAsJsonObject(it).getAsJsonArray("velocitaVento")
         var stime = stimeVelocita.getAsJsonObject(it).getAsJsonArray("stimeVelocitaBarca")
 
-        println("Vela: $vela")
-        println("WindAngles: $windAngles")
-        println("WindSpeeds: $windSpeeds")
-        println("Stime: $stime")
+        if(LOG_ENABLED)Log.d("DEBUG","Vela: $vela")
+        if(LOG_ENABLED)Log.d("DEBUG","WindAngles: $windAngles")
+        if(LOG_ENABLED)Log.d("DEBUG","WindSpeeds: $windSpeeds")
+        if(LOG_ENABLED)Log.d("DEBUG","Stime: $stime")
 
         val angoliIndex = trovaAngoli(windAngles, destinationDirection)
 
@@ -228,14 +234,14 @@ fun routeCalculator(
 
 fun getTWA(windDirection: Double, shipDirection: Double): Double {
     var relativeWindDirection = windDirection - shipDirection
-    //println("relativeWindDirection: $relativeWindDirection")
+    //if(LOG_ENABLED)Log.d("DEBUG","relativeWindDirection: $relativeWindDirection")
     //Normalize the angle
     if (relativeWindDirection < 0) {
         relativeWindDirection += 360.0
     } else if (relativeWindDirection > 360) {
         relativeWindDirection -= 360.0
     }
-    //println("twa pre adjust: $relativeWindDirection")
+    //if(LOG_ENABLED)Log.d("DEBUG","twa pre adjust: $relativeWindDirection")
     //Adjuste the range
     if (relativeWindDirection > 180) {
         relativeWindDirection = 360.0 - relativeWindDirection
@@ -269,7 +275,7 @@ fun angleBetweenPoints(
 fun getDistanceBetweenPoints(
     latitude1: String, longitude1: String, latitude2: String, longitude2: String, unit: String
 ): Double {
-    //println("2input data= "+latitude1+" "+longitude1+ " "+latitude2+" "+longitude2)
+    //if(LOG_ENABLED)Log.d("DEBUG","2input data= "+latitude1+" "+longitude1+ " "+latitude2+" "+longitude2)
     val r = 6371.0 // Radius of the Earth in kilometers
     val latDistance = Math.toRadians(latitude1.toDouble() - latitude2.toDouble())
     val lonDistance = Math.toRadians(longitude1.toDouble() - longitude2.toDouble())
@@ -293,7 +299,7 @@ fun getDistanceBetweenPointsMeters(
     longitude2: String,
     unit: String = "kilometers"
 ): Int {
-    //println("1input data= "+latitude1+" "+longitude1+ " "+latitude2+" "+longitude2)
+    //if(LOG_ENABLED)Log.d("DEBUG","1input data= "+latitude1+" "+longitude1+ " "+latitude2+" "+longitude2)
     return (getDistanceBetweenPoints(
         latitude1, longitude1, latitude2, longitude2, unit = "kilometers"
     ) * 1000).toInt()
@@ -301,7 +307,7 @@ fun getDistanceBetweenPointsMeters(
 
 var anchorDistanceLimitMeters: Double = 100.0
 fun checkAnchorDistance(anchorLatLng: LatLng, shipLatLng: LatLng): Boolean {
-    //println("input data check= "+anchorLatLng.toString()+shipLatLng.toString())
+    //if(LOG_ENABLED)Log.d("DEBUG","input data check= "+anchorLatLng.toString()+shipLatLng.toString())
     val distance = getDistanceBetweenPointsMeters(
         anchorLatLng.latitude.toString(),
         anchorLatLng.longitude.toString(),
@@ -310,7 +316,7 @@ fun checkAnchorDistance(anchorLatLng: LatLng, shipLatLng: LatLng): Boolean {
         "kilometers"
     )
     //val b = BigDecimal(distance).toPlainString()
-    println("Anchor distance: $distance")
+    if(LOG_ENABLED)Log.d("DEBUG","Anchor distance: $distance")
     if (distance > anchorDistanceLimitMeters) {
         return true
     }
@@ -328,12 +334,14 @@ var cameraUpdate: Int = 0
 fun Map(
     navController: NavHostController,
     isSwippeEnabled: Boolean,
+    localViewModel: LocalViewModel,
+    remoteViewModel: RemoteViewModel,
     onSwipeChange: (Boolean) -> Unit
 ) {
 
     onSwipeChange(false)
     //val ok = getDistanceBetweenPointsMeters("45.4641943", "9.1896346", "40.8358846", "14.2487679")
-    //println("Napoli milano: " + ok)
+    //if(LOG_ENABLED)Log.d("DEBUG","Napoli milano: " + ok)
     var shipPosition by remember { mutableStateOf(LatLng(0.0, 0.0)) }
     var shipDirection by remember { mutableDoubleStateOf(0.0) }
     var destinationPosition by remember { mutableStateOf(LatLng(0.0, 0.0)) }
@@ -348,130 +356,209 @@ fun Map(
     var courseOverGround by remember { mutableDoubleStateOf(0.0) }
     var trueWindAngle by remember { mutableDoubleStateOf(0.0) }
 
-    var stimeVelocita = JsonObject()
+    //var stimeVelocita = JsonObject()
 
+    //Anchor marker variables
     var anchorVisibility by remember { mutableStateOf(false) }
     /*var destinationPositionVisibility by remember { mutableStateOf(false) }
     var destinationLineVisibility by remember { mutableStateOf(false) }*/
     var directionButtonVisibility by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
 
-    var colorAnchor by remember { mutableLongStateOf(orange) }
 
-    var connectionState: ConnectionState by remember { mutableStateOf(ConnectionState.Loading) }
-
-    val localViewModel: LocalViewModel = viewModel()
-    val remoteViewModel: RemoteViewModel = viewModel()
-
-    //Stime velocita local
-    val stimeVelocitaUiState: StimeVelocitaUiState = localViewModel.stimeVelocitaUiState
-
-    when (stimeVelocitaUiState) {
-        is StimeVelocitaUiState.Error -> println("Error stime velocita local")
-        is StimeVelocitaUiState.Loading -> println("Loading stime velocita local")
-        is StimeVelocitaUiState.Success -> {
-
-            val result =
-                (localViewModel.stimeVelocitaUiState as StimeVelocitaUiState.Success).stimeVelocita
-            println("Success: Stime velocita local $result")
-
-            stimeVelocita = result
-
-            /*result.keySet().forEach{
-            }*/
-            //println("keyset = " + result.keySet().toString())
-            //stimeVelocita = Gson().fromJson(result, Array<JsonObject>::class.java)
-            //println("Stime velocita: $stimeVelocita")
-        }
-    }
-
-    if (!isConnectionLocal()) {
-        //Stime velocita remote
-        val getstimeRemoteUiState: GetStimeRemoteUiState = remoteViewModel.getStimeRemoteUiState
-        connectionState = ConnectionState.Remote
-        when (getstimeRemoteUiState) {
-            is GetStimeRemoteUiState.Error -> println("Error stime velocita remote")
-            is GetStimeRemoteUiState.Loading -> println("Loading stime velocita remote")
-            is GetStimeRemoteUiState.Success -> {
-                //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
-                println("Success: Stime velocita remote")
-                stimeVelocita = Gson().fromJson(
-                    (remoteViewModel.getStimeRemoteUiState as GetStimeRemoteUiState.Success).stime,
-                    JsonObject::class.java
-                )
-                println("Success: Stime velocita remote $stimeVelocita")
-            }
-        }
-    }
-
+    //Anchor variables
     var anchorLocal: Anchor = Anchor("0.0", "0.0", "-1", "")
     var anchorRemote = ""
     var anchorRemoteObj = Anchor("0.0", "0.0", "-1", "")
     var anchorDistanceMeters by remember { mutableIntStateOf(0) }
+    var colorAnchor by remember { mutableLongStateOf(orange) }
 
-    //Set Anchor state
-    val setAnchorLocalUiState: SetAnchorLocalUiState = localViewModel.setAnchorUiState
 
-    when (setAnchorLocalUiState) {
-        is SetAnchorLocalUiState.Error -> println("Error set local anchor")
-        is SetAnchorLocalUiState.Loading -> println("Loading set local anchor")
-        is SetAnchorLocalUiState.Success -> {
-            //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
-            println("Success: Local connection set anchor")
-            val result = (localViewModel.setAnchorUiState as SetAnchorLocalUiState.Success).result
-            println("Result set anchor local: $result")
+
+
+    if(connectionState == ConnectionState.Local) {
+        //localViewModel = viewModel()
+
+        //Stime velocita local
+        val stimeVelocitaUiState: StimeVelocitaUiState = localViewModel!!.stimeVelocitaUiState
+
+        when (stimeVelocitaUiState) {
+            is StimeVelocitaUiState.Error -> if(LOG_ENABLED)Log.d("DEBUG","Error stime velocita local")
+            is StimeVelocitaUiState.Loading -> if(LOG_ENABLED)Log.d("DEBUG","Loading stime velocita local")
+            is StimeVelocitaUiState.Success -> {
+
+                val result =
+                    (localViewModel!!.stimeVelocitaUiState as StimeVelocitaUiState.Success).stimeVelocita
+                if(LOG_ENABLED)Log.d("DEBUG","Success: Stime velocita local $result")
+
+                stimeVelocita = result
+                if(LOG_ENABLED)Log.d("DEBUG","Connessione locale: stime velocità")
+
+                /*result.keySet().forEach{
+                }*/
+                //if(LOG_ENABLED)Log.d("DEBUG","keyset = " + result.keySet().toString())
+                //stimeVelocita = Gson().fromJson(result, Array<JsonObject>::class.java)
+                //if(LOG_ENABLED)Log.d("DEBUG","Stime velocita: $stimeVelocita")
+            }
         }
-    }
 
-    //Anchor Local
-    val getAnchorLocalUiState: GetAnchorLocalUiState = localViewModel.getAnchorUiState
+        //Set Anchor state local
+        val setAnchorLocalUiState: SetAnchorLocalUiState = localViewModel!!.setAnchorUiState
 
-    when (getAnchorLocalUiState) {
-        is GetAnchorLocalUiState.Error -> println("Error get local anchor")
-        is GetAnchorLocalUiState.Loading -> println("Loading get local anchor")
-        is GetAnchorLocalUiState.Success -> {
-            //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
-            println("Success: Local connection get anchor")
-            anchorLocal = (localViewModel.getAnchorUiState as GetAnchorLocalUiState.Success).anchor
-            println("Get Ancora locale: $anchorLocal")
-            connectionState = ConnectionState.Local
+        when (setAnchorLocalUiState) {
+            is SetAnchorLocalUiState.Error -> if(LOG_ENABLED)Log.d("DEBUG","Error set local anchor")
+            is SetAnchorLocalUiState.Loading -> if(LOG_ENABLED)Log.d("DEBUG","Loading set local anchor")
+            is SetAnchorLocalUiState.Success -> {
+                //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
+                if(LOG_ENABLED)Log.d("DEBUG","Success: Local connection set anchor")
+                val result = (localViewModel!!.setAnchorUiState as SetAnchorLocalUiState.Success).result
+                if(LOG_ENABLED)Log.d("DEBUG","Result set anchor local: $result")
+            }
         }
-    }
-    if (!isConnectionLocal()) {
+
+        //Get Anchor Local
+        val getAnchorLocalUiState: GetAnchorLocalUiState = localViewModel!!.getAnchorUiState
+
+        when (getAnchorLocalUiState) {
+            is GetAnchorLocalUiState.Error -> if(LOG_ENABLED)Log.d("DEBUG","Error get local anchor")
+            is GetAnchorLocalUiState.Loading -> if(LOG_ENABLED)Log.d("DEBUG","Loading get local anchor")
+            is GetAnchorLocalUiState.Success -> {
+                //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
+                if(LOG_ENABLED)Log.d("DEBUG","Success: Local connection get anchor")
+                anchorLocal = (localViewModel!!.getAnchorUiState as GetAnchorLocalUiState.Success).anchor
+                if(LOG_ENABLED)Log.d("DEBUG","Get Ancora locale: $anchorLocal")
+            }
+        }
+        //set anchor marker local
+        if (anchorLocal.anchored.isNotEmpty() && anchorLocal.anchored != "-1") {
+
+            if(LOG_ENABLED)Log.d("DEBUG","set local anchor marker")
+            if (anchorLocal.anchored == "1") {
+                anchorVisibility = true
+                updateAnchor(anchorVisibility)
+                colorAnchor = red
+            } else if (anchorLocal.anchored == "0") {
+                anchorVisibility = false
+                updateAnchor(anchorVisibility)
+                colorAnchor = orange
+            }
+            //if(LOG_ENABLED)Log.d("DEBUG",ship_position.toString())
+        }
+
+        //Nmea data local
+        if (nmeaDataLocal?.value?.get("latitude")?.isNullOrEmpty() == false && nmeaDataLocal?.value?.get("longitude")?.isNullOrEmpty() == false) {
+
+            if(LOG_ENABLED)Log.d("DEBUG","Ship & NMEAdata local")
+            if (nmeaDataLocal?.value?.get("latitude") != "0.0" || !nmeaDataLocal?.value.isNullOrEmpty()) {
+                if (nmeaDataLocal?.value?.get("latitude") != null && nmeaDataLocal?.value?.get("longitude") != null) {
+                    shipPosition = LatLng(
+                        nmeaDataLocal?.value?.get("latitude")!!.toDouble(),
+                        nmeaDataLocal?.value?.get("longitude")!!.toDouble()
+                    )
+                }
+                if (nmeaDataLocal?.value?.get("shipDirection") != null) {
+                    shipDirection = nmeaDataLocal?.value?.get("shipDirection")!!.toDouble()
+                }
+                if (nmeaDataLocal?.value?.get("windDirection") != null) {
+                    windDirection = nmeaDataLocal?.value?.get("windDirection")!!.toDouble()
+                }
+                if (nmeaDataLocal?.value?.get("windSpeed") != null) {
+                    windSpeed = nmeaDataLocal?.value?.get("windSpeed")!!.toDouble()
+                }
+                if (nmeaDataLocal?.value?.get("courseOverGround") != null) {
+                    courseOverGround = nmeaDataLocal?.value?.get("courseOverGround")!!.toDouble()
+
+                }
+                if (nmeaDataLocal?.value?.get("shipSpeed") != null) {
+                    speedOverGround = nmeaDataLocal?.value?.get("shipSpeed")!!.toDouble()
+
+                }
+                if(LOG_ENABLED)Log.d("DEBUG","Anchor local: " + anchorLocal.latitude + " " + anchorLocal.longitude + " Ship local: " + shipPosition.toString())
+                if(LOG_ENABLED)Log.d("DEBUG",
+                    "Anchor is distanced " + checkAnchorDistance(
+                        LatLng(
+                            anchorLocal.latitude.toDouble(), anchorLocal.longitude.toDouble()
+                        ), shipPosition
+                    )
+                )
+                if (checkAnchorDistance(
+                        LatLng(
+                            anchorLocal.latitude.toDouble(), anchorLocal.longitude.toDouble()
+                        ), shipPosition
+                    ) && anchorLocal.anchored == "1"
+                ) {
+                    val context = LocalContext.current
+                    val mp: MediaPlayer = MediaPlayer.create(context, R.raw.notification)
+                    mp.setOnCompletionListener {
+                        it.release()
+                    }
+                    mp.start()
+                }
+                anchorDistanceMeters = getDistanceBetweenPointsMeters(
+                    anchorLocal.latitude,
+                    anchorLocal.longitude,
+                    shipPosition.latitude.toString(),
+                    shipPosition.longitude.toString(),
+                    "kilometers"
+                )
+            }
+            //if(LOG_ENABLED)Log.d("DEBUG",ship_position.toString())
+        }
+
+
+
+    }else if(connectionState == ConnectionState.Remote){
+        //remoteViewModel = viewModel()
+
+        //Stime velocita remote
+        val getstimeRemoteUiState: GetStimeRemoteUiState = remoteViewModel!!.getStimeRemoteUiState
+
+        when (getstimeRemoteUiState) {
+            is GetStimeRemoteUiState.Error -> if(LOG_ENABLED)Log.d("DEBUG","Error stime velocita remote")
+            is GetStimeRemoteUiState.Loading -> if(LOG_ENABLED)Log.d("DEBUG","Loading stime velocita remote")
+            is GetStimeRemoteUiState.Success -> {
+                //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
+                if(LOG_ENABLED)Log.d("DEBUG","Success: Stime velocita remote")
+                stimeVelocita = Gson().fromJson(
+                    (remoteViewModel!!.getStimeRemoteUiState as GetStimeRemoteUiState.Success).stime,
+                    JsonObject::class.java
+                )
+                if(LOG_ENABLED)Log.d("DEBUG","Success: Stime velocita remote $stimeVelocita")
+            }
+        }
+
         //Anchor Remote
-        val anchorRemoteUiState: GetAnchorRemoteUiState = remoteViewModel.getAnchorRemoteUiState
-        connectionState = ConnectionState.Remote
+        val anchorRemoteUiState: GetAnchorRemoteUiState = remoteViewModel!!.getAnchorRemoteUiState
+
         when (anchorRemoteUiState) {
             is GetAnchorRemoteUiState.Error -> {
-                println("Error remote get anchor")
+                if(LOG_ENABLED)Log.d("DEBUG","Error remote get anchor")
             }
 
             is GetAnchorRemoteUiState.Loading -> {
-                println("Loading remote get anchor")
+                if(LOG_ENABLED)Log.d("DEBUG","Loading remote get anchor")
             }
 
             is GetAnchorRemoteUiState.Success -> {
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
-                println("Success: Remote connection get anchor")
+                if(LOG_ENABLED)Log.d("DEBUG","Success: Remote connection get anchor")
                 anchorRemote =
-                    (remoteViewModel.getAnchorRemoteUiState as GetAnchorRemoteUiState.Success).anchor
-                println("Anchor remote: $anchorRemote")
+                    (remoteViewModel!!.getAnchorRemoteUiState as GetAnchorRemoteUiState.Success).anchor
+                if(LOG_ENABLED)Log.d("DEBUG","Anchor remote: $anchorRemote")
                 val list = anchorRemote.split(" ")
-                println(list.toString())
-                println("." + list[2] + ".")
+                if(LOG_ENABLED)Log.d("DEBUG",list.toString())
+                if(LOG_ENABLED)Log.d("DEBUG","." + list[2] + ".")
                 anchorRemoteObj = Anchor(
                     latitude = String.format("%.7f", list[0].toDouble()),
                     longitude = String.format("%.7f", list[1].toDouble()),
                     anchored = list[2],
                     time = list[3]
                 )
-                println("Anchor remoteObj: $anchorRemoteObj")
+                if(LOG_ENABLED)Log.d("DEBUG","Anchor remoteObj: $anchorRemoteObj")
             }
         }
-    }
-    //set anchor marker
-    if (anchorLocal.anchored.isEmpty() || anchorLocal.anchored == "-1") {
-        println("set remote anchor marker")
+        //set anchor marker remote
+        if(LOG_ENABLED)Log.d("DEBUG","set remote anchor marker")
         if (anchorRemoteObj.anchored.isNotEmpty()) {
             if (anchorRemoteObj.anchored != "-1") {
                 if (anchorRemoteObj.anchored == "1") {
@@ -485,43 +572,9 @@ fun Map(
                 }
             }
         }
-    } else {
-        println("set local anchor marker")
-        if (anchorLocal.anchored == "1") {
-            anchorVisibility = true
-            updateAnchor(anchorVisibility)
-            colorAnchor = red
-        } else if (anchorLocal.anchored == "0") {
-            anchorVisibility = false
-            updateAnchor(anchorVisibility)
-            colorAnchor = orange
-        }
-        //println(ship_position.toString())
-    }
-    //nmeaData local
-    val nmeaDataLocal = localViewModel.data.collectAsState()
-    var nmeaDataRemote = HashMap<String, String>()
-
-    if (!isConnectionLocal()) {
-        //NmeaData remote
-        val remoteUiState: RemoteUiState = remoteViewModel.remoteUiState
-        connectionState = ConnectionState.Remote
-        when (remoteUiState) {
-            is RemoteUiState.Error -> println("Error remote connection")
-            is RemoteUiState.Loading -> println("Loading remote connection")
-            is RemoteUiState.Success -> {
-                //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
-                println("Success: Remote connection")
-                nmeaDataRemote =
-                    readNMEA((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
-            }
-        }
-    }
-
-    //Nmea data
-    if (nmeaDataLocal.value["latitude"].isNullOrEmpty() && nmeaDataLocal.value["longitude"].isNullOrEmpty()) {
+        //NMEAData remote
         if (!nmeaDataRemote["latitude"].isNullOrEmpty() && !nmeaDataRemote["longitude"].isNullOrEmpty() && nmeaDataRemote["longitude"] != "0.0") {
-            println("Ship position & NMEAdata remote")
+            if(LOG_ENABLED)Log.d("DEBUG","Ship position & NMEAdata remote")
             shipPosition = LatLng(
                 nmeaDataRemote["latitude"]!!.toDouble(), nmeaDataRemote["longitude"]!!.toDouble()
             )
@@ -532,8 +585,8 @@ fun Map(
             courseOverGround = nmeaDataRemote["courseOverGround"]!!.toDouble()
             speedOverGround = nmeaDataRemote["speedOverGround"]!!.toDouble()
 
-            println("Anchor remote: " + anchorRemoteObj.latitude + " " + anchorRemoteObj.longitude + " Ship remote: " + shipPosition.toString())
-            println(
+            if(LOG_ENABLED)Log.d("DEBUG","Anchor remote: " + anchorRemoteObj.latitude + " " + anchorRemoteObj.longitude + " Ship remote: " + shipPosition.toString())
+            if(LOG_ENABLED)Log.d("DEBUG",
                 "Anchor is distanced " + checkAnchorDistance(
                     LatLng(
                         anchorRemoteObj.latitude.toDouble(), anchorRemoteObj.longitude.toDouble()
@@ -561,61 +614,31 @@ fun Map(
                 "kilometers"
             )
         }
-    } else {
-        println("Ship & NMEAdata local")
-        if (nmeaDataLocal.value["latitude"] != "0.0" || !nmeaDataLocal.value.isNullOrEmpty()) {
-            if (nmeaDataLocal.value["latitude"] != null && nmeaDataLocal.value["longitude"] != null) {
-                shipPosition = LatLng(
-                    nmeaDataLocal.value["latitude"]!!.toDouble(),
-                    nmeaDataLocal.value["longitude"]!!.toDouble()
-                )
-            }
-            if (nmeaDataLocal.value["shipDirection"] != null) {
-                shipDirection = nmeaDataLocal.value["shipDirection"]!!.toDouble()
-            }
-            if (nmeaDataLocal.value["windDirection"] != null) {
-                windDirection = nmeaDataLocal.value["windDirection"]!!.toDouble()
-            }
-            if (nmeaDataLocal.value["windSpeed"] != null) {
-                windSpeed = nmeaDataLocal.value["windSpeed"]!!.toDouble()
-            }
-            if (nmeaDataLocal.value["courseOverGround"] != null) {
-                courseOverGround = nmeaDataLocal.value["courseOverGround"]!!.toDouble()
-            }
-            if (nmeaDataLocal.value["speedOverGround"] != null) {
-                speedOverGround = nmeaDataLocal.value["shipSpeed"]!!.toDouble()
-            }
-            println("Anchor local: " + anchorLocal.latitude + " " + anchorLocal.longitude + " Ship local: " + shipPosition.toString())
-            println(
-                "Anchor is distanced " + checkAnchorDistance(
-                    LatLng(
-                        anchorLocal.latitude.toDouble(), anchorLocal.longitude.toDouble()
-                    ), shipPosition
-                )
-            )
-            if (checkAnchorDistance(
-                    LatLng(
-                        anchorLocal.latitude.toDouble(), anchorLocal.longitude.toDouble()
-                    ), shipPosition
-                ) && anchorLocal.anchored == "1"
-            ) {
-                val context = LocalContext.current
-                val mp: MediaPlayer = MediaPlayer.create(context, R.raw.notification)
-                mp.setOnCompletionListener {
-                    it.release()
-                }
-                mp.start()
-            }
-            anchorDistanceMeters = getDistanceBetweenPointsMeters(
-                anchorLocal.latitude,
-                anchorLocal.longitude,
-                shipPosition.latitude.toString(),
-                shipPosition.longitude.toString(),
-                "kilometers"
-            )
-        }
-        //println(ship_position.toString())
+
+
     }
+
+   /* //nmeaData local
+    val nmeaDataLocal = localViewModel.data.collectAsState()
+    var nmeaDataRemote = HashMap<String, String>()
+
+    if (!isConnectionLocal()) {
+        //NmeaData remote
+        val remoteUiState: RemoteUiState = remoteViewModel.remoteUiState
+        connectionState = ConnectionState.Remote
+        when (remoteUiState) {
+            is RemoteUiState.Error -> if(LOG_ENABLED)Log.d("DEBUG","Error remote connection")
+            is RemoteUiState.Loading -> if(LOG_ENABLED)Log.d("DEBUG","Loading remote connection")
+            is RemoteUiState.Success -> {
+                //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
+                if(LOG_ENABLED)Log.d("DEBUG","Success: Remote connection")
+                nmeaDataRemote =
+                    readNMEA((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
+            }
+        }
+    }*/
+
+
     trueWindAngle = getTWA(windDirection, shipDirection)
 
     val route = routeCalculator(
@@ -647,7 +670,7 @@ fun Map(
     } else lastVMaxEff
 
     route.forEach {
-        println("Route: $it")
+        if(LOG_ENABLED)Log.d("DEBUG","Route: $it")
     }
 
     //Maps variables
@@ -669,14 +692,14 @@ fun Map(
         "© OpenStreetMap contributors"
     )
 
-    var maxZoom = 13
+    var maxZoom = 13.0
 
-    if (isConnectionLocal()) {
-        println("Local tiles")
-        maxZoom = 8
+    if (connectionState == ConnectionState.Local) {
+        if(LOG_ENABLED)Log.d("DEBUG","Local tiles")
+        maxZoom = 8.0
         tileSource = localTileSource
     } else {
-        println("Remote tiles")
+        if(LOG_ENABLED)Log.d("DEBUG","Remote tiles")
         tileSource = TileSourceFactory.MAPNIK
     }
     Box(
@@ -739,22 +762,18 @@ fun Map(
                 MapView(ctx).apply {
 
                     mapView = this
-                    this.maxZoomLevel = 13.0
-                    if (isConnectionLocal()) {
-                        println("Local zoom 8")
-                        this.maxZoomLevel = 8.0
-                    }
+                    this.maxZoomLevel = maxZoom
 
                     setTileSource(tileSource)
                     setMultiTouchControls(true)
                     setBuiltInZoomControls(false)
-                    controller.setZoom(10.0)
+                    controller.setZoom(maxZoomLevel)
                     controller.setCenter(
                         GeoPoint(
                             shipPosition.latitude, shipPosition.longitude
                         )
                     )
-                    println("create destination marker")
+                    if(LOG_ENABLED)Log.d("DEBUG","create destination marker")
                     if (destination == null) {
                         destination = Marker(this)
                     }
@@ -815,11 +834,11 @@ fun Map(
                     val eventsOverlay = MapEventsOverlay(object : MapEventsReceiver {
                         override fun longPressHelper(p: GeoPoint?): Boolean {
                             if (p != null) {
-                                println("Long press")
+                                if(LOG_ENABLED) Log.d("DEBUG","Long press")
                                 //destination = Marker(this@apply)
                                 //addOrUpdateMarker(this@apply, p.latitude, p.longitude, "Marker", "Long press marker")
 
-                                println("Add destination")
+                                if(LOG_ENABLED)Log.d("DEBUG","Add destination")
                                 updateDestinationPosition(LatLng(p.latitude, p.longitude))
 
                                 directionButtonVisibility = true
@@ -832,7 +851,7 @@ fun Map(
                                     shipPosition.latitude.toString(),
                                     shipPosition.longitude.toString()
                                 )
-                                println(
+                                if(LOG_ENABLED)Log.d("DEBUG",
                                     "Angolo destinazione: $destinationDirection"
                                 )
                                 /*destination!!.title = "title"
@@ -861,7 +880,7 @@ fun Map(
                         when (event.action) {
                             MotionEvent.CLASSIFICATION_TWO_FINGER_SWIPE -> {
                                 // Handle touch events
-                                println("TouchListener")
+                                if(LOG_ENABLED)Log.d("DEBUG","TouchListener")
                                 this.onTouchEvent(event)
                                 true
                             }
@@ -955,8 +974,8 @@ fun Map(
                     else colorAnchor = orange
                     if (connectionState == ConnectionState.Local) {
                         if (anchorLocal.latitude != null && anchorLocal.latitude != "0.0") {
-                            println("send local anchor: $anchorLocal")
-                            localViewModel.setAnchor(
+                            if(LOG_ENABLED)Log.d("DEBUG","send local anchor: $anchorLocal")
+                            localViewModel?.setAnchor(
                                 shipPosition.latitude.toString(),
                                 shipPosition.longitude.toString(),
                                 if (anchorLocal.anchored == "1") "0" else "1"
@@ -971,8 +990,8 @@ fun Map(
                             anchorRemoteObj.latitude = shipPosition.latitude.toString()
                             anchorRemoteObj.longitude = shipPosition.longitude.toString()
                             val body = Gson().toJson(anchorRemoteObj)
-                            println("send remote anchor $body")
-                            println("result: " + remoteViewModel.setAnchor(body))
+                            if(LOG_ENABLED)Log.d("DEBUG","send remote anchor $body")
+                            if(LOG_ENABLED)Log.d("DEBUG","result: " + (remoteViewModel?.setAnchor(body)))
                         }
                     }
                 }, colors = ButtonDefaults.buttonColors(
@@ -1029,7 +1048,7 @@ fun Map(
                             shipPosition.longitude
                         )
                     )
-                    mapView?.controller?.setZoom(10.0)
+                    mapView?.controller?.setZoom(10)
                 },
                 colors = ButtonDefaults.buttonColors(
                     backgroundColor = Color(orange), // Background color
@@ -1055,7 +1074,7 @@ fun Map(
 }
 
 fun updateShipPosition(shipPosition: LatLng, shipDirection: Double) {
-    println("Update ship position: $shipPosition")
+    if(LOG_ENABLED)Log.d("DEBUG","Update ship position: $shipPosition")
     ship?.position = GeoPoint(shipPosition.latitude, shipPosition.longitude)
     ship?.rotation = 360 - shipDirection.toFloat()
     anchor?.position = GeoPoint(shipPosition.latitude, shipPosition.longitude)
@@ -1074,7 +1093,7 @@ fun updateShipPosition(shipPosition: LatLng, shipDirection: Double) {
 }
 
 fun updateDestinationPosition(destinationPosition: LatLng) {
-    println("Update destination position: $destinationPosition")
+    if(LOG_ENABLED)Log.d("DEBUG","Update destination position: $destinationPosition")
     destination?.position = GeoPoint(destinationPosition.latitude, destinationPosition.longitude)
     destination?.setVisible(true)
     mapView?.invalidate()

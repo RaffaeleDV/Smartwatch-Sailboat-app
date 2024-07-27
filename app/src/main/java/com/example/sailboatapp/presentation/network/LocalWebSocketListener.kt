@@ -1,5 +1,7 @@
 package com.example.sailboatapp.presentation.network
 
+import android.util.Log
+import com.example.sailboatapp.presentation.ui.screen.LOG_ENABLED
 import com.example.sailboatapp.presentation.ui.screen.setLocalConnection
 
 import okhttp3.Response
@@ -10,40 +12,41 @@ import okio.ByteString
 class LocalWebSocketListener(private val onMessageReceived: (ByteString) -> Unit) : WebSocketListener() {
     override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
         super.onClosed(webSocket, code, reason)
-        println("WebSocket closed: $code / $reason")
+        if(LOG_ENABLED) Log.d("DEBUG","WebSocket closed: $code / $reason")
 
     }
 
     override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
         super.onClosing(webSocket, code, reason)
         webSocket.close(1000, null)
-        println("WebSocket is closing: $code / $reason")
+        if(LOG_ENABLED) Log.d("DEBUG","WebSocket is closing: $code / $reason")
 
     }
 
     override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
         super.onFailure(webSocket, t, response)
-        println("WebSocket connection failed: ${t.message}")
+        if(LOG_ENABLED) Log.d("DEBUG","WebSocket connection failed: ${t.message}")
         setLocalConnection(false)
     }
 
     override fun onMessage(webSocket: WebSocket, text: String) {
         super.onMessage(webSocket, text)
-        println("Received message: $text")
+        if(LOG_ENABLED) Log.d("DEBUG","Received message: $text")
     }
 
     override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
         super.onMessage(webSocket, bytes)
-        //println("Received bytes: $bytes")
-        //println(bytes.base64())
-        //println("NUOVA "+String(Base64.getDecoder().decode(bytes.base64())))
+        //if(LOG_ENABLED) Log.d("DEBUG","Received bytes: $bytes")
+        //if(LOG_ENABLED) Log.d("DEBUG",bytes.base64())
+        //if(LOG_ENABLED) Log.d("DEBUG","NUOVA "+String(Base64.getDecoder().decode(bytes.base64())))
+        if(LOG_ENABLED) Log.d("DEBUG","Connessione locale: websocket message received")
         onMessageReceived(bytes)
 
     }
 
     override fun onOpen(webSocket: WebSocket, response: Response) {
         super.onOpen(webSocket, response)
-        println("WebSocket connection opened")
+        if(LOG_ENABLED) Log.d("DEBUG","WebSocket connection opened")
         setLocalConnection(true)
         //webSocket.send("Hello, World!") // Example message
 

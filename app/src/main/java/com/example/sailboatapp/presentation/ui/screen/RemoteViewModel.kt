@@ -1,5 +1,6 @@
 package com.example.sailboatapp.presentation.ui.screen
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -48,12 +49,14 @@ class RemoteViewModel : ViewModel() {
      * Call on init so we can display status immediately.
      */
     init {
+        if(LOG_ENABLED) Log.d("DEBUG","Connessione remota: init")
         startRepeatingRequests()
     }
 
     private fun startRepeatingRequests() {
         viewModelScope.launch {
             while (true) {
+                if(LOG_ENABLED) Log.d("DEBUG","Connessione remota: repeat")
                 getNmeaRemote()
                 getAnchor()
                 getStimeVelocita()

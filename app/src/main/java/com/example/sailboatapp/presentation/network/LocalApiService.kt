@@ -14,7 +14,7 @@ import retrofit2.http.Query
 
 //private const val SOCKET_BASE_URL = "8080" //webserver websockify
 
-private const val SOCKET_NMEA_FORWARDER = "8000" //webserver nmea forwarder
+
 
 //private const val BASE_URL_NMEA_FORWARDER = "http://192.168.178.48" //Websocket
 
@@ -28,7 +28,7 @@ private val retrofit = Retrofit.Builder()
 
 private val retrofitNmeaForwarder = Retrofit.Builder()
     .addConverterFactory(ScalarsConverterFactory.create())
-    .baseUrl("http://$raspberryIp:$SOCKET_NMEA_FORWARDER/")
+    .baseUrl("http://$raspberryIp:${ServerConfig.SOCKET_NMEA_FORWARDER}/")
     .build()
 
 interface LocalApiService{

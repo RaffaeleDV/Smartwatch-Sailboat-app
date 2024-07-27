@@ -2,6 +2,7 @@ package com.example.sailboatapp.presentation.ui.screen
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,38 +50,31 @@ import com.example.sailboatapp.R
 import com.example.sailboatapp.presentation.MainActivity
 import com.example.sailboatapp.presentation.data.readNMEA
 import com.example.sailboatapp.presentation.model.Raffica
+import com.example.sailboatapp.presentation.network.ConnectionState
+import com.example.sailboatapp.presentation.network.ServerConfig.RASPBERRY_IP_DEFAULT
+import com.example.sailboatapp.presentation.network.ServerConfig.WEBSOCKIFY_SOCKET_DEFAULT
+import com.example.sailboatapp.presentation.network.connectionState
 import com.example.sailboatapp.presentation.ui.DEGREE_SYMBOL
 import com.example.sailboatapp.presentation.ui.KNOT_SYMBOL
-
+import com.google.gson.JsonObject
 
 class LocalConnection {
     var localConnectionState: Boolean = false
-
     fun setConnectionState(state: Boolean) {
-        localConnectionState = state
-    }
-
+        localConnectionState = state    }
     fun getConnectionState(): Boolean {
         return localConnectionState
     }
 }
-
 var locCon = LocalConnection()
 fun isConnectionLocal(): Boolean {
     return locCon.getConnectionState()
 }
-
 fun setLocalConnection(state: Boolean) {
     locCon.setConnectionState(state)
 }
 
-enum class ConnectionState {
-    Local, Remote, Loading, Offline
-}
-
-const val  RASPBERRY_IP_DEFAULT = "192.168.178.48" //Raspberry ip default
-const val WEBSOCKIFY_SOCKET_DEFAULT = "8080"
-
+val LOG_ENABLED = true
 
 var raspberryIp = RASPBERRY_IP_DEFAULT //Raspberry ip
 var websockifySocket = WEBSOCKIFY_SOCKET_DEFAULT
@@ -95,84 +90,89 @@ fun getString(context: Context, key: String): String? {
     val sharedPreferences: SharedPreferences = context.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
     return sharedPreferences.getString(key, null)
 }
+/*
+var localViewModel: LocalViewModel? = null
+var remoteViewModel: RemoteViewModel? = null*/
 
+var nmeaDataRemote = HashMap<String, String>()
+var nmeaDataLocal : State<HashMap<String, String>>? = null
+
+var stimeVelocita = JsonObject()
 @Composable
 fun Homepage(
     navController: NavHostController,
     isSwippeEnabled: Boolean,
     mainActivity: MainActivity,
+    localViewModel: LocalViewModel,
+    remoteViewModel: RemoteViewModel,
     onSwipeChange: (Boolean) -> Unit
 ) {
 
     onSwipeChange(false)
-
+    //Change config ip (store & read)
     val context = LocalContext.current
-
     val savedIp = getString(LocalContext.current, "ip")
-    println("Saved IP= $savedIp")
-
+    if(LOG_ENABLED)Log.d("DEBUG", "savedIp: $savedIp")
+    //println("Saved IP= $savedIp")
     if(savedIp != null && savedIp != ""){
         raspberryIp = savedIp
     }
-
     val savedSocket = getString(LocalContext.current, "socket")
-    println("Saved socket= $savedIp")
-
+    if(LOG_ENABLED)Log.d("DEBUG","Saved socket= $savedIp")
     if(savedSocket != null && savedIp != ""){
         websockifySocket = savedSocket
     }
-
-    println("Base url: $raspberryIp")
-    println("Base socket: $websockifySocket")
-
-
+    if(LOG_ENABLED)Log.d("DEBUG","Base url: $raspberryIp")
+    if(LOG_ENABLED)Log.d("DEBUG","Base socket: $websockifySocket")
 
     var lastVelVento = "0.0"
     var lastMaxWindSpeed = "0.0"
     var lastShipDirection = "0.0"
 
-    var connectionState: ConnectionState by remember { mutableStateOf(ConnectionState.Loading) }
-
-    val localViewModel: LocalViewModel = viewModel()
-
-    //Raffica local
-    val rafficaUiState: RafficaUiState = localViewModel.rafficaUiState
     var raffica = Raffica("", "", "")
-    when (rafficaUiState) {
-        is RafficaUiState.Error -> println("Error local raffica connection")
-        is RafficaUiState.Loading -> println("Loading local raffica connection")
-        is RafficaUiState.Success -> {
-            //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
-            connectionState = ConnectionState.Local
-            println("Success: local connection Raffica")
-            raffica = (localViewModel.rafficaUiState as RafficaUiState.Success).raffica
+
+    if(connectionState == ConnectionState.Local){
+
+        //localViewModel = viewModel()
+
+        //Raffica local
+        val rafficaUiState: RafficaUiState = localViewModel!!.rafficaUiState
+
+        when (rafficaUiState) {
+            is RafficaUiState.Error -> if(LOG_ENABLED)Log.d("DEBUG","Error local raffica connection")
+            is RafficaUiState.Loading -> if(LOG_ENABLED)Log.d("DEBUG","Loading local raffica connection")
+            is RafficaUiState.Success -> {
+                //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
+                if(LOG_ENABLED)Log.d("DEBUG","Success: local connection Raffica")
+                raffica = (localViewModel!!.rafficaUiState as RafficaUiState.Success).raffica
+                if(LOG_ENABLED)Log.d("DEBUG","Connessione locale: raffica")
+            }
         }
-    }
-    //Neam sentence local from websocket
-    val nmeaDataLocal = localViewModel.data.collectAsState()
-    var nmeaDataRemote = HashMap<String, String>()
-    connectionState = ConnectionState.Local
-    //Neam sentence remote
-    if (!isConnectionLocal()) {
-        val remoteViewModel: RemoteViewModel = viewModel()
+
+    }else if (connectionState == ConnectionState.Remote){
+
+        //Nmea sentence remote
+        //remoteViewModel = viewModel()
+
         val remoteUiState: RemoteUiState = remoteViewModel.remoteUiState
-        connectionState = ConnectionState.Remote
         when (remoteUiState) {
             is RemoteUiState.Error -> {
-                connectionState = ConnectionState.Offline
-                println("Error remote connection")
+                if(LOG_ENABLED)Log.d("DEBUG","Error remote connection nmea")
             }
-
-            is RemoteUiState.Loading -> println("Loading remote connection")
+            is RemoteUiState.Loading -> if(LOG_ENABLED)Log.d("DEBUG","Loading remote connection")
             is RemoteUiState.Success -> {
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
-                connectionState = ConnectionState.Remote
-                println("Success: Remote connection")
+
+                if(LOG_ENABLED)Log.d("DEBUG","Success: Remote connection nmea")
                 nmeaDataRemote =
                     readNMEA((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
             }
         }
+
     }
+
+    //Neam sentence local from websocket
+    nmeaDataLocal = localViewModel?.data?.collectAsState()
 
     val listState = rememberScalingLazyListState()
     val vignetteState by remember { mutableStateOf(VignettePosition.TopAndBottom) }
@@ -228,23 +228,32 @@ fun Homepage(
             }
             item {
 
-                //var lastlast = "0.0"
                 Text(
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.secondary,
                     fontSize = 15.sp,
-                    text = (if (nmeaDataLocal.value["windSpeed"] == null) {
+                    text = (
+
+                    if (connectionState == ConnectionState.Remote) {
                         if (nmeaDataRemote["windSpeed"].isNullOrEmpty()) {
                             "$lastVelVento $KNOT_SYMBOL"
                         } else {
                             "${nmeaDataRemote["windSpeed"]!!} $KNOT_SYMBOL"
                         }
                     } else {
-                        if (nmeaDataLocal.value["windSpeed"]!! == "0.0") {
-                            "$lastVelVento $KNOT_SYMBOL"
-                        } else {
-                            lastVelVento = nmeaDataLocal.value["windSpeed"]!!
+                        if(nmeaDataLocal?.value != null){
+                            if (nmeaDataLocal?.value?.get("windSpeed") != null) {
+                                if (nmeaDataLocal?.value?.get("windSpeed") == "0.0") {
+                                    "$lastVelVento $KNOT_SYMBOL"
+                                } else {
+                                    lastVelVento = nmeaDataLocal?.value?.get("windSpeed")!!
+                                    "$lastVelVento $KNOT_SYMBOL"
+                                }
+                            } else {
+                                "$lastVelVento $KNOT_SYMBOL"
+                            }
+                        }else{
                             "$lastVelVento $KNOT_SYMBOL"
                         }
 
@@ -281,7 +290,6 @@ fun Homepage(
                             lastMaxWindSpeed = raffica.velVento
                             "$lastMaxWindSpeed $KNOT_SYMBOL"
                         }
-
                     })
                 )
             }
@@ -299,18 +307,22 @@ fun Homepage(
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.secondary,
                     fontSize = 15.sp,
-                    text = (if (nmeaDataLocal.value["shipDirection"] == null) {
-
+                    text = (
+                    if (connectionState == ConnectionState.Remote) {
                         if (nmeaDataRemote["shipDirection"].isNullOrEmpty()) {
                             "$lastShipDirection$DEGREE_SYMBOL"
                         } else {
                             "${nmeaDataRemote["shipDirection"]!!}$DEGREE_SYMBOL"
                         }
                     } else {
-                        if (nmeaDataLocal.value["shipDirection"]!! == "0.0") {
-                            "$lastShipDirection$DEGREE_SYMBOL"
-                        } else {
-                            lastShipDirection = nmeaDataLocal.value["shipDirection"]!!
+                        if(nmeaDataLocal?.value?.get("shipDirection") != null){
+                            if (nmeaDataLocal?.value?.get("shipDirection") == "0.0") {
+                                "$lastShipDirection$DEGREE_SYMBOL"
+                            } else {
+                                lastShipDirection = nmeaDataLocal?.value?.get("shipDirection")!!
+                                "$lastShipDirection$DEGREE_SYMBOL"
+                            }
+                        }else{
                             "$lastShipDirection$DEGREE_SYMBOL"
                         }
 
@@ -454,6 +466,7 @@ fun Homepage(
                     Button(
                         onClick = {
                             showDialog = false
+                            mainActivity.recreate()
                         }, modifier = Modifier.size(30.dp)
                     ) {
                         Icon(

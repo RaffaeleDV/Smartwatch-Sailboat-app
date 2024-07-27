@@ -1,6 +1,7 @@
 package com.example.sailboatapp.presentation.ui.screen
 
 import android.os.Build
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -71,6 +72,7 @@ class LocalViewModel : ViewModel() {
      * Call on init so we can display status immediately.
      */
     init {
+        if(LOG_ENABLED) Log.d("DEBUG","Connessione locale: init")
         getNmeaLocal()
         startRepeatingRequests()
     }
@@ -86,6 +88,7 @@ class LocalViewModel : ViewModel() {
                 getAnchor()
                 getStimeVelocita()
                 recInfo()
+                if(LOG_ENABLED)Log.d("DEBUG","Connessione locale: repeat")
                 delay(5000) // Delay for 5 seconds
             }
         }
@@ -144,7 +147,7 @@ class LocalViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val result = LocalApi.retrofitNmeaForwarderService.calculatePolars()
-                println("calculatePolars: $result")
+                if(LOG_ENABLED)Log.d("DEBUG","calculatePolars: $result")
 
             } catch (e: IOException) {
 
@@ -156,7 +159,7 @@ class LocalViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val result = LocalApi.retrofitNmeaForwarderService.clearPolars()
-                println("clearPolars: $result")
+                if(LOG_ENABLED)Log.d("DEBUG","clearPolars: $result")
 
             } catch (e: IOException) {
 
@@ -168,7 +171,7 @@ class LocalViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val result = LocalApi.retrofitNmeaForwarderService.recPolars(sails)
-                println("recPolars: $result")
+                if(LOG_ENABLED)Log.d("DEBUG","recPolars: $result")
 
             } catch (e: IOException) {
 
@@ -183,7 +186,7 @@ class LocalViewModel : ViewModel() {
                 recInfoState = RecInfoState.Success(
                     result
                 )
-                println("recInfo: $result")
+                if(LOG_ENABLED)Log.d("DEBUG","recInfo: $result")
             } catch (e: IOException) {
                 recInfoState = RecInfoState.Error
 
@@ -195,7 +198,7 @@ class LocalViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val result = LocalApi.retrofitNmeaForwarderService.setAnchor(latitude, longitude, anchored)
-                println("Ancora set: "+ result)
+                if(LOG_ENABLED)Log.d("DEBUG","Ancora set: "+ result)
                 setAnchorUiState = SetAnchorLocalUiState.Success(
                     result
                 )
@@ -211,6 +214,7 @@ class LocalViewModel : ViewModel() {
         val listener = LocalWebSocketListener { bytes ->
             viewModelScope.launch {
                 _data.value = processData(bytes) // Update the state with the received data
+                if(LOG_ENABLED)Log.d("DEBUG","Connessione locale: nmea local received")
             }
         }
         val webSocket: WebSocket = client.newWebSocket(request, listener)
@@ -226,6 +230,5 @@ class LocalViewModel : ViewModel() {
             readNMEA(String(android.util.Base64.decode(bytes.base64(), android.util.Base64.DEFAULT)))
         }
     }
-
 
 }

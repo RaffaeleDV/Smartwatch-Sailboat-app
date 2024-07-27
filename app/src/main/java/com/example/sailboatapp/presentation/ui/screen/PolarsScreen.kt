@@ -2,7 +2,7 @@ package com.example.sailboatapp.presentation.ui.screen
 
 
 import android.content.Context
-import androidx.compose.animation.core.animateFloatAsState
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -32,7 +31,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.wear.compose.foundation.lazy.AutoCenteringParams
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
@@ -41,7 +39,6 @@ import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.material.PageIndicatorState
 import androidx.wear.compose.material.PositionIndicator
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
@@ -50,24 +47,24 @@ import androidx.wear.compose.material.Vignette
 import androidx.wear.compose.material.VignettePosition
 import androidx.wear.compose.material.dialog.Dialog
 import com.example.sailboatapp.R
-import com.example.sailboatapp.presentation.orange
+import com.example.sailboatapp.presentation.network.ConnectionState
+import com.example.sailboatapp.presentation.network.connectionState
 import com.google.gson.Gson
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoRuntimeSettings
 import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoView
 import java.io.BufferedReader
-import java.io.File
 import java.io.InputStreamReader
-import java.net.URI
 
 
 @Composable
 fun Polars(
     navController: NavHostController,
     isSwippeEnabled: Boolean,
+    localViewModel: LocalViewModel,
+    remoteViewModel: RemoteViewModel,
     onSwipeChange: (Boolean) -> Unit
 ) {
     onSwipeChange(false)
@@ -88,80 +85,85 @@ fun Polars(
         mutableStateOf(true)
     }
 
-    var connectionState: ConnectionState by remember { mutableStateOf(ConnectionState.Loading) }
+    //var connectionState: ConnectionState by remember { mutableStateOf(ConnectionState.Loading) }
 
-    var stimeVelocita = JsonObject()
+    //var stimeVelocita = JsonObject()
 
     var showDialog by remember { mutableStateOf(false) }
     var showChart by remember { mutableStateOf(false) }
 
-    val localViewModel: LocalViewModel = viewModel()
-    val remoteViewModel: RemoteViewModel = viewModel()
+    /*val localViewModel: LocalViewModel = viewModel()
+    val remoteViewModel: RemoteViewModel = viewModel()*/
 
-    //recInfo local
-    val recInfoUiState: RecInfoState = localViewModel.recInfoState
 
-    when (recInfoUiState) {
-        is RecInfoState.Error -> println("Error recInfo local")
-        is RecInfoState.Loading -> println("Loading recInfo local")
-        is RecInfoState.Success -> {
-            val result = (localViewModel.recInfoState as RecInfoState.Success).infoRec
-            println("Success: RecInfo local $result")
-            if(result == "true"){
-                polarRecState = true
-                polarString = "Termina"
-            }else{
-                polarRecState = false
-                polarString = "Inizia registrazione"
-            }
-        }
-    }
 
-    //Stime velocita local
-    val stimeVelocitaUiState: StimeVelocitaUiState = localViewModel.stimeVelocitaUiState
+    if(connectionState == ConnectionState.Local){
+        //recInfo local
+        val recInfoUiState: RecInfoState = localViewModel!!.recInfoState
 
-    when (stimeVelocitaUiState) {
-        is StimeVelocitaUiState.Error -> println("Error stime velocita local")
-        is StimeVelocitaUiState.Loading -> println("Loading stime velocita local")
-        is StimeVelocitaUiState.Success -> {
-            connectionState = ConnectionState.Local
-            val result =
-                (localViewModel.stimeVelocitaUiState as StimeVelocitaUiState.Success).stimeVelocita
-            println("Success: Stime velocita local $result")
-
-            stimeVelocita = result
-            result.keySet().forEach{
-                if(it == "inProgress"){
-                    println("Calcolo in corso")
+        when (recInfoUiState) {
+            is RecInfoState.Error -> if(LOG_ENABLED) Log.d("DEBUG","Error recInfo local")
+            is RecInfoState.Loading -> if(LOG_ENABLED) Log.d("DEBUG","Loading recInfo local")
+            is RecInfoState.Success -> {
+                val result = (localViewModel!!.recInfoState as RecInfoState.Success).infoRec
+                if(LOG_ENABLED) Log.d("DEBUG","Success: RecInfo local $result")
+                if(result == "true"){
+                    polarRecState = true
+                    polarString = "Termina"
+                }else{
+                    polarRecState = false
+                    polarString = "Inizia registrazione"
                 }
-
-
             }
-            //println("keyset = " + result.keySet().toString())
-            //stimeVelocita = Gson().fromJson(result, Array<JsonObject>::class.java)
-            //println("Stime velocita: $stimeVelocita")
         }
-    }
 
-    if (!isConnectionLocal()) {
+        //Stime velocita local
+        val stimeVelocitaUiState: StimeVelocitaUiState = localViewModel!!.stimeVelocitaUiState
+
+        when (stimeVelocitaUiState) {
+            is StimeVelocitaUiState.Error -> if(LOG_ENABLED) Log.d("DEBUG","Error stime velocita local")
+            is StimeVelocitaUiState.Loading -> if(LOG_ENABLED) Log.d("DEBUG","Loading stime velocita local")
+            is StimeVelocitaUiState.Success -> {
+                connectionState = ConnectionState.Local
+                val result =
+                    (localViewModel!!.stimeVelocitaUiState as StimeVelocitaUiState.Success).stimeVelocita
+                if(LOG_ENABLED) Log.d("DEBUG","Success: Stime velocita local $result")
+
+                stimeVelocita = result
+                result.keySet().forEach{
+                    if(it == "inProgress"){
+                        if(LOG_ENABLED) Log.d("DEBUG","Calcolo in corso")
+                    }
+
+
+                }
+                //if(LOG_ENABLED) Log.d("DEBUG","keyset = " + result.keySet().toString())
+                //stimeVelocita = Gson().fromJson(result, Array<JsonObject>::class.java)
+                //if(LOG_ENABLED) Log.d("DEBUG","Stime velocita: $stimeVelocita")
+            }
+        }
+
+    }else if(connectionState == ConnectionState.Remote){
         //Stime velocita remote
-        val getstimeRemoteUiState: GetStimeRemoteUiState = remoteViewModel.getStimeRemoteUiState
-        connectionState = ConnectionState.Remote
+        val getstimeRemoteUiState: GetStimeRemoteUiState = remoteViewModel!!.getStimeRemoteUiState
+
         when (getstimeRemoteUiState) {
-            is GetStimeRemoteUiState.Error -> println("Error stime velocita remote")
-            is GetStimeRemoteUiState.Loading -> println("Loading stime velocita remote")
+            is GetStimeRemoteUiState.Error -> if(LOG_ENABLED) Log.d("DEBUG","Error stime velocita remote")
+            is GetStimeRemoteUiState.Loading -> if(LOG_ENABLED) Log.d("DEBUG","Loading stime velocita remote")
             is GetStimeRemoteUiState.Success -> {
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
-                println("Success: Stime velocita remote")
+                if(LOG_ENABLED) Log.d("DEBUG","Success: Stime velocita remote")
                 stimeVelocita = Gson().fromJson(
-                    (remoteViewModel.getStimeRemoteUiState as GetStimeRemoteUiState.Success).stime,
+                    (remoteViewModel!!.getStimeRemoteUiState as GetStimeRemoteUiState.Success).stime,
                     JsonObject::class.java
                 )
-                println("Success: Stime velocita remote $stimeVelocita")
+                if(LOG_ENABLED) Log.d("DEBUG","Success: Stime velocita remote $stimeVelocita")
             }
         }
 
     }
+
+
 
     Scaffold(modifier = Modifier
         .fillMaxWidth()
@@ -215,7 +217,7 @@ fun Polars(
                     )
                 }
             }
-            println("connectionState = $connectionState")
+            if(LOG_ENABLED) Log.d("DEBUG","connectionState = $connectionState")
             if(connectionState == ConnectionState.Local){
                 item { Spacer(modifier = Modifier.height(20.dp)) }
                 item {
@@ -223,7 +225,7 @@ fun Polars(
                         onClick = {
                             if (polarRecState) {
                                 polarRecState = false
-                                localViewModel.recPolars("")
+                                localViewModel!!.recPolars("")
                                 polarString = "Inizia registrazione"
                             } else {
                                 polarRecState = true
@@ -245,7 +247,7 @@ fun Polars(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Button(//Calcola button
-                            onClick = { localViewModel.calculatePolars() },
+                            onClick = { localViewModel!!.calculatePolars() },
                             modifier = Modifier
                                 .height(30.dp)
                                 .width(70.dp)
@@ -255,7 +257,7 @@ fun Polars(
                         }
                         Spacer(modifier = Modifier.width(20.dp))
                         Button(//Clear button
-                            onClick = { localViewModel.clearPolars() },
+                            onClick = { localViewModel!!.clearPolars() },
                             modifier = Modifier
                                 .height(30.dp)
                                 //.alpha(if (connectionState == ConnectionState.Local) 1f else 0f)
@@ -299,11 +301,11 @@ fun Polars(
                         stimeJson = stimeVelocita.getAsJsonObject(it)
                             .getAsJsonArray("stimeVelocitaBarca")
 
-                        //println("Vela: $vela")
-                        //println("WindAngles: $windAnglesJson")
-                        //println("WindSpeeds: $windSpeedsJson")
+                        //if(LOG_ENABLED) Log.d("DEBUG","Vela: $vela")
+                        //if(LOG_ENABLED) Log.d("DEBUG","WindAngles: $windAnglesJson")
+                        //if(LOG_ENABLED) Log.d("DEBUG","WindSpeeds: $windSpeedsJson")
 
-                        //println(windSpeedsJson.get(0))
+                        //if(LOG_ENABLED) Log.d("DEBUG",windSpeedsJson.get(0))
                         windSpeed.clear()
                         for (jsonElement in windSpeedsJson) {
                             when (jsonElement) {
@@ -330,10 +332,10 @@ fun Polars(
                                 }
                             }
                         }
-                        //println("Stime 0 ${stimeJson[0]}")
+                        //if(LOG_ENABLED) Log.d("DEBUG","Stime 0 ${stimeJson[0]}")
 
-                        //println("Stime json: $stimeJson")
-                        stime.forEach { println("Stime: $it") }
+                        //if(LOG_ENABLED) Log.d("DEBUG","Stime json: $stimeJson")
+                        stime.forEach { if(LOG_ENABLED) Log.d("DEBUG","Stime: $it") }
 
                         ConstraintLayout(
                             modifier = Modifier
@@ -350,7 +352,7 @@ fun Polars(
                                     val isHeaderRow = row == 0
                                     val isHeaderColumn = col == 0
 
-                                    //println("Row & Col: $row $col")
+                                    //if(LOG_ENABLED) Log.d("DEBUG","Row & Col: $row $col")
 
 
                                     Text(
@@ -415,8 +417,8 @@ fun Polars(
                 Button(
                     onClick = {
                         showDialog = false
-                        println("Text= $textState")
-                        localViewModel.recPolars(textState)
+                        if(LOG_ENABLED) Log.d("DEBUG","Text= $textState")
+                        localViewModel!!.recPolars(textState)
                         if(textState != ""){
                             polarString = "Termina"
                         }
@@ -457,8 +459,8 @@ fun Polars(
 
                         if (sRuntime == null) {
                             // GeckoRuntime can only be initialized once per process
-                            sRuntime = GeckoRuntime.create(context, runtimeSettings)
-                            //sRuntime = GeckoRuntime.getDefault(context)
+                            //sRuntime = GeckoRuntime.create(context, runtimeSettings)
+                            sRuntime = GeckoRuntime.getDefault(context)
                         }
 
                         session.open(sRuntime)
@@ -474,7 +476,7 @@ fun Polars(
 
                         stimeVelocita.keySet().forEach{
                             if(it == "inProgress"){
-                                println("Calcolo in corso")
+                                if(LOG_ENABLED) Log.d("DEBUG","Calcolo in corso")
                             }
 
 
@@ -489,9 +491,9 @@ fun Polars(
                             stimeJson = stimeVelocita.getAsJsonObject(it)
                                 .getAsJsonArray("stimeVelocitaBarca")
 
-                            println("Vela: $vela")
-                            println("WindAngles: $windAnglesJson")
-                            println("WindSpeeds: $windSpeedsJson")
+                            if(LOG_ENABLED) Log.d("DEBUG","Vela: $vela")
+                            if(LOG_ENABLED) Log.d("DEBUG","WindAngles: $windAnglesJson")
+                            if(LOG_ENABLED) Log.d("DEBUG","WindSpeeds: $windSpeedsJson")
 
                             windSpeed.clear()
                             for (jsonElement in windSpeedsJson) {
@@ -520,8 +522,8 @@ fun Polars(
                                 }
                             }
 
-                            println("Stime json: $stimeJson")
-                            stime.forEach { println("Stime: $it") }
+                            if(LOG_ENABLED) Log.d("DEBUG","Stime json: $stimeJson")
+                            stime.forEach { if(LOG_ENABLED) Log.d("DEBUG","Stime: $it") }
                         }*/
 
 
@@ -530,11 +532,11 @@ fun Polars(
                         //val myURL = assetsURL + "test2.html"
 
                         //var file = readAssetFile(context, "plotly-2.25.2.min.js")
-                        //println("File: $file ${file.length}")
+                        //if(LOG_ENABLED) Log.d("DEBUG","File: $file ${file.length}")
 
                         var span = ""
 
-                        println("Numero vele: ${stimeVelocita.keySet().size}")
+                        if(LOG_ENABLED) Log.d("DEBUG","Numero vele: ${stimeVelocita.keySet().size}")
                         if (stimeVelocita.keySet().size > 1) {
                             span =
                                 "<span style=\"display:block; height: 100px; padding: 400px;\"></span>"
@@ -573,7 +575,7 @@ fun Polars(
 <p>This is a paragraph.</p>
 
 </body>
-</html> 
+</html>
                         """*/
 
                         val total = """
@@ -757,7 +759,7 @@ fun Polars(
          justify-content: center;
          align-items: center;
          background-color: rgb(170, 211, 223);
-         }         
+         }
       </style>
       <script src="http://$raspberryIp:8080/script/plotly-2.25.2.min.js"></script>
       <script>console.log("Test = Prova1");</script>
@@ -768,17 +770,17 @@ fun Polars(
          <h1>Test</h1>
       </div>
       <div id='stime' style="display:none" >
-         $stimeVelocita    
+         $stimeVelocita
       </div>
       <script>
          console.log("script");
          var stime = document.getElementById("stime").innerHTML;
          var dati = JSON.parse(stime);
-         var key = Object.keys(dati);          
-         
+         var key = Object.keys(dati);
+
       </script>
    </body>
-</html>           
+</html>
         """*/
 
 
