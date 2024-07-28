@@ -51,6 +51,7 @@ import com.example.sailboatapp.presentation.MainActivity
 import com.example.sailboatapp.presentation.data.readNMEA
 import com.example.sailboatapp.presentation.model.Raffica
 import com.example.sailboatapp.presentation.network.ConnectionState
+import com.example.sailboatapp.presentation.network.InstantiateViewModel
 import com.example.sailboatapp.presentation.network.ServerConfig.RASPBERRY_IP_DEFAULT
 import com.example.sailboatapp.presentation.network.ServerConfig.WEBSOCKIFY_SOCKET_DEFAULT
 import com.example.sailboatapp.presentation.network.connectionState
@@ -90,9 +91,9 @@ fun getString(context: Context, key: String): String? {
     val sharedPreferences: SharedPreferences = context.getSharedPreferences("MyPreferences", Context.MODE_PRIVATE)
     return sharedPreferences.getString(key, null)
 }
-/*
-var localViewModel: LocalViewModel? = null
-var remoteViewModel: RemoteViewModel? = null*/
+
+//var localViewModel: LocalViewModel? = null
+//var remoteViewModel: RemoteViewModel = RemoteViewModel()
 
 var nmeaDataRemote = HashMap<String, String>()
 var nmeaDataLocal : State<HashMap<String, String>>? = null
@@ -103,8 +104,6 @@ fun Homepage(
     navController: NavHostController,
     isSwippeEnabled: Boolean,
     mainActivity: MainActivity,
-    localViewModel: LocalViewModel,
-    remoteViewModel: RemoteViewModel,
     onSwipeChange: (Boolean) -> Unit
 ) {
 
@@ -133,7 +132,7 @@ fun Homepage(
 
     if(connectionState == ConnectionState.Local){
 
-        //localViewModel = viewModel()
+        val localViewModel = InstantiateViewModel.instantiateLocalViewModel()
 
         //Raffica local
         val rafficaUiState: RafficaUiState = localViewModel!!.rafficaUiState
@@ -149,10 +148,13 @@ fun Homepage(
             }
         }
 
+        //Neam sentence local from websocket
+        nmeaDataLocal = localViewModel?.data?.collectAsState()
+
     }else if (connectionState == ConnectionState.Remote){
 
         //Nmea sentence remote
-        //remoteViewModel = viewModel()
+        var remoteViewModel = InstantiateViewModel.instantiateRemoteViewModel()
 
         val remoteUiState: RemoteUiState = remoteViewModel.remoteUiState
         when (remoteUiState) {
@@ -171,8 +173,7 @@ fun Homepage(
 
     }
 
-    //Neam sentence local from websocket
-    nmeaDataLocal = localViewModel?.data?.collectAsState()
+
 
     val listState = rememberScalingLazyListState()
     val vignetteState by remember { mutableStateOf(VignettePosition.TopAndBottom) }

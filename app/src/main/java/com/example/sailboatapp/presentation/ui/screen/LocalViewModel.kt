@@ -12,6 +12,8 @@ import com.example.sailboatapp.presentation.model.Anchor
 import com.example.sailboatapp.presentation.network.LocalApi
 import com.example.sailboatapp.presentation.network.LocalWebSocketListener
 import com.example.sailboatapp.presentation.model.Raffica
+import com.example.sailboatapp.presentation.network.ConnectionState
+import com.example.sailboatapp.presentation.network.connectionState
 import com.google.gson.JsonObject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +55,9 @@ sealed interface RecInfoState {
     object Error : RecInfoState
     object Loading : RecInfoState
 }
+
+private var i = 0
+private var j = 0
 class LocalViewModel : ViewModel() {
     /** The mutable State that stores the status of the most recent request */
     private val _data = MutableStateFlow<HashMap<String, String>>(HashMap<String, String>())
@@ -72,9 +77,10 @@ class LocalViewModel : ViewModel() {
      * Call on init so we can display status immediately.
      */
     init {
-        if(LOG_ENABLED) Log.d("DEBUG","Connessione locale: init")
+        if(LOG_ENABLED) Log.d("DEBUG","Connessione locale: init $i")
         getNmeaLocal()
         startRepeatingRequests()
+        i++
     }
 
     /**
@@ -84,12 +90,15 @@ class LocalViewModel : ViewModel() {
     private fun startRepeatingRequests() {
         viewModelScope.launch {
             while (true) {
-                getRaffica()
-                getAnchor()
-                getStimeVelocita()
-                recInfo()
-                if(LOG_ENABLED)Log.d("DEBUG","Connessione locale: repeat")
-                delay(5000) // Delay for 5 seconds
+                //if (connectionState == ConnectionState.Local) {
+                    if (LOG_ENABLED) Log.d("DEBUG", "Connessione locale: repeat $j of $i")
+                    getRaffica()
+                    getAnchor()
+                    getStimeVelocita()
+                    recInfo()
+                    delay(5000) // Delay for 5 seconds
+                    j++
+                //}
             }
         }
     }

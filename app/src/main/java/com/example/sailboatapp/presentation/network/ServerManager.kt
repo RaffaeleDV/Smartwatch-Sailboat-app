@@ -2,12 +2,14 @@ package com.example.sailboatapp.presentation.network
 
 import android.content.Context
 import android.os.Handler
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.sailboatapp.presentation.network.NetworkUtil.isNetworkAvailable
 import com.example.sailboatapp.presentation.network.NetworkUtil.isServerReachable
+import com.example.sailboatapp.presentation.ui.screen.LOG_ENABLED
 import com.example.sailboatapp.presentation.ui.screen.raspberryIp
 import com.example.sailboatapp.presentation.ui.screen.websockifySocket
 import kotlinx.coroutines.CoroutineScope
@@ -38,23 +40,23 @@ class ServerManager(context: Context) : CoroutineScope {
         serverCheckJob = launch {
             while (isActive) {
                 if (isNetworkAvailable(context)) {
-                    println("Network is available")
+                    if(LOG_ENABLED) Log.d("DEBUG","ServerManager: Network is available")
                     withContext(Dispatchers.IO) {
                         if (isServerReachable("http://$raspberryIp:$websockifySocket/")) {
-                            println("Local server is reachable")
+                            if(LOG_ENABLED) Log.d("DEBUG","ServerManager: Local server is reachable")
                             connectionState = ConnectionState.Local
-                            //delay(5000)
                         } else {
                             if (isServerReachable("https://${ServerConfig.REMOTE_SERVER}/")) {
-                                println("Remote server is reachable")
+                                if(LOG_ENABLED) Log.d("DEBUG","ServerManager: Remote server is reachable")
                                 connectionState = ConnectionState.Remote
                             } else {
-                                println("No server is reachable")
+                                if(LOG_ENABLED) Log.d("DEBUG","ServerManager: No server is reachable")
                                 connectionState = ConnectionState.Offline
                             }
                         }
                     }
                 }
+                if(LOG_ENABLED) Log.d("DEBUG","ServerManager: Status: $connectionState")
                 delay(5000) // check every 5 seconds
             }
         }

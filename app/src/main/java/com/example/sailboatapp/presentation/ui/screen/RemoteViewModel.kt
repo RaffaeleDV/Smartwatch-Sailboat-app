@@ -6,11 +6,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.sailboatapp.presentation.network.ConnectionState
 import com.example.sailboatapp.presentation.network.RemoteApi
+import com.example.sailboatapp.presentation.network.connectionState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.IOException
 
+
+private var i = 0
+private var j = 0
 sealed interface RemoteUiState {
     data class Success(val nmea: String) : RemoteUiState
     object Error : RemoteUiState
@@ -49,18 +54,22 @@ class RemoteViewModel : ViewModel() {
      * Call on init so we can display status immediately.
      */
     init {
-        if(LOG_ENABLED) Log.d("DEBUG","Connessione remota: init")
+        if(LOG_ENABLED) Log.d("DEBUG","Connessione remota: init $i")
         startRepeatingRequests()
+        i++
     }
 
     private fun startRepeatingRequests() {
         viewModelScope.launch {
             while (true) {
-                if(LOG_ENABLED) Log.d("DEBUG","Connessione remota: repeat")
-                getNmeaRemote()
-                getAnchor()
-                getStimeVelocita()
-                delay(5000) // Delay for 5 seconds
+                /*if(connectionState == ConnectionState.Remote){*/
+                    if(LOG_ENABLED) Log.d("DEBUG","Connessione remota: repeat $j of $i")
+                    getNmeaRemote()
+                    getAnchor()
+                    getStimeVelocita()
+                    delay(5000) // Delay for 5 seconds
+                    j++
+                //}
             }
         }
     }

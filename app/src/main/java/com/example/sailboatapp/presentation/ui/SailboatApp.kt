@@ -39,9 +39,7 @@ const val KNOT_SYMBOL = "Kn"
 @Composable
 fun SailboatApp(
     mainActivity: MainActivity,
-    localViewModel: LocalViewModel,
-    remoteViewModel: RemoteViewModel
-) {
+   ) {
 
     var isSwippeEnabled by remember { mutableStateOf(true) }
 
@@ -75,17 +73,17 @@ fun SailboatApp(
                 startDestination = "homepage"
             ) {
                 composable("homepage") {
-                    Homepage(navController, isSwippeEnabled, mainActivity, localViewModel, remoteViewModel) { newValues ->
+                    Homepage(navController, isSwippeEnabled, mainActivity) { newValues ->
                         isSwippeEnabled = newValues as Boolean
                     }
                 }
                 composable("polars") {
-                    Polars(navController, isSwippeEnabled, localViewModel, remoteViewModel) { newValues ->
+                    Polars(navController, isSwippeEnabled) { newValues ->
                         isSwippeEnabled = newValues as Boolean
                     }
                 }
                 composable("map") {
-                    Map(navController, isSwippeEnabled, localViewModel, remoteViewModel) { newValues ->
+                    Map(navController, isSwippeEnabled) { newValues ->
                         isSwippeEnabled = newValues as Boolean
                     }
                 }

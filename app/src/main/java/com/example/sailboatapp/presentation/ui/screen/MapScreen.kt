@@ -44,6 +44,7 @@ import androidx.wear.compose.material.dialog.Dialog
 import com.example.sailboatapp.R
 import com.example.sailboatapp.presentation.model.Anchor
 import com.example.sailboatapp.presentation.network.ConnectionState
+import com.example.sailboatapp.presentation.network.InstantiateViewModel
 import com.example.sailboatapp.presentation.network.connectionState
 import com.example.sailboatapp.presentation.orange
 import com.example.sailboatapp.presentation.red
@@ -334,8 +335,6 @@ var cameraUpdate: Int = 0
 fun Map(
     navController: NavHostController,
     isSwippeEnabled: Boolean,
-    localViewModel: LocalViewModel,
-    remoteViewModel: RemoteViewModel,
     onSwipeChange: (Boolean) -> Unit
 ) {
 
@@ -377,7 +376,7 @@ fun Map(
 
 
     if(connectionState == ConnectionState.Local) {
-        //localViewModel = viewModel()
+        val localViewModel = InstantiateViewModel.instantiateLocalViewModel()
 
         //Stime velocita local
         val stimeVelocitaUiState: StimeVelocitaUiState = localViewModel!!.stimeVelocitaUiState
@@ -508,7 +507,7 @@ fun Map(
 
 
     }else if(connectionState == ConnectionState.Remote){
-        //remoteViewModel = viewModel()
+        val remoteViewModel = InstantiateViewModel.instantiateRemoteViewModel()
 
         //Stime velocita remote
         val getstimeRemoteUiState: GetStimeRemoteUiState = remoteViewModel!!.getStimeRemoteUiState
@@ -975,7 +974,9 @@ fun Map(
                     if (connectionState == ConnectionState.Local) {
                         if (anchorLocal.latitude != null && anchorLocal.latitude != "0.0") {
                             if(LOG_ENABLED)Log.d("DEBUG","send local anchor: $anchorLocal")
-                            localViewModel?.setAnchor(
+                            if(LOG_ENABLED)Log.d("DEBUG","send anchored: ${if (anchorLocal.anchored == "1") "0" else "1"}")
+                            val localViewModel = InstantiateViewModel.instantiateLocalViewModel()
+                            localViewModel.setAnchor(
                                 shipPosition.latitude.toString(),
                                 shipPosition.longitude.toString(),
                                 if (anchorLocal.anchored == "1") "0" else "1"
@@ -983,7 +984,7 @@ fun Map(
                             if (anchorLocal.anchored == "1") anchorLocal.anchored =
                                 "0" else anchorLocal.anchored = "1"
                         }
-                    } else {
+                    } else if(connectionState == ConnectionState.Remote) {
                         if (anchorRemoteObj.latitude != null && anchorRemoteObj.latitude != "0.0") {
                             if (anchorRemoteObj.anchored == "1") anchorRemoteObj.anchored =
                                 "0" else anchorRemoteObj.anchored = "1"
@@ -991,6 +992,7 @@ fun Map(
                             anchorRemoteObj.longitude = shipPosition.longitude.toString()
                             val body = Gson().toJson(anchorRemoteObj)
                             if(LOG_ENABLED)Log.d("DEBUG","send remote anchor $body")
+                            val remoteViewModel = InstantiateViewModel.instantiateRemoteViewModel()
                             if(LOG_ENABLED)Log.d("DEBUG","result: " + (remoteViewModel?.setAnchor(body)))
                         }
                     }
