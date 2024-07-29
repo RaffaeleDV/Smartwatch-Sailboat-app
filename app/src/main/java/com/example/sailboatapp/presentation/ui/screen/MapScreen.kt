@@ -900,7 +900,7 @@ fun Map(
             updateShipPosition(shipPosition, shipDirection)
         }
 
-        ConstraintLayout(
+        /*ConstraintLayout(
             modifier = Modifier.fillMaxSize()
         ) {
             val (leftButton, topButton, rightButton, bottomButton) = createRefs()
@@ -917,7 +917,7 @@ fun Map(
                     onRightClick = { panMap(0.0, 0.020) }
                 )
             }
-        }
+        }*/
 
         ConstraintLayout(
             modifier = Modifier.fillMaxSize()
@@ -944,7 +944,7 @@ fun Map(
                     modifier = Modifier.size(15.dp)
                 )
             }
-            if (connectionState == ConnectionState.Local && directionButtonVisibility) {
+            /*if (connectionState == ConnectionState.Local && directionButtonVisibility) {
                 Button(//Rotta Button
                     onClick = {
                         showDialog = true
@@ -967,7 +967,7 @@ fun Map(
                         modifier = Modifier.size(15.dp)
                     )
                 }
-            }
+            }*/
             Button(//Anchor Button
                 onClick = {
                     anchorVisibility = !anchorVisibility
@@ -1017,12 +1017,10 @@ fun Map(
                     modifier = Modifier.size(15.dp)
                 )
             }
-            /*if (connectionState == ConnectionState.Local && directionButtonVisibility) {
-                Button(//Direction Button
+            if (connectionState == ConnectionState.Local && directionButtonVisibility) {
+                Button(//Rotta Button
                     onClick = {
-                        if (connectionState == ConnectionState.Local && directionButtonVisibility) {
-                            showDialog = true
-                        }
+                        showDialog = true
                     },
                     colors = ButtonDefaults.buttonColors(
                         backgroundColor = Color(orange), // Background color
@@ -1043,7 +1041,7 @@ fun Map(
                         modifier = Modifier.size(15.dp)
                     )
                 }
-            }*/
+            }
             Button(
                 //Reset position
                 onClick = {
@@ -1108,7 +1106,7 @@ fun updateAnchor(visibility: Boolean) {
     anchor?.setVisible(visibility)
     mapView?.invalidate()
 }
-
+/*
 @Composable
 fun DirectionalPad(
     onUpClick: () -> Unit,
@@ -1207,7 +1205,7 @@ fun DirectionalPad(
             )
         }
     }
-    /*Box() {
+    *//*Box() {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
@@ -1267,11 +1265,12 @@ fun DirectionalPad(
                 //Text("Down")
             }
         }
-    }*/
-}
+    }*//*
+}*/
+/*
 
 fun panMap(latDelta: Double, lonDelta: Double) {
     val currentCenter = mapView?.mapCenter as GeoPoint
     val newCenter = GeoPoint(currentCenter.latitude + latDelta, currentCenter.longitude + lonDelta)
     mapView?.controller?.setCenter(newCenter)
-}
+}*/
