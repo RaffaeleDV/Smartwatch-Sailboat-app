@@ -63,6 +63,7 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
+import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.asin
 import kotlin.math.atan2
@@ -548,8 +549,8 @@ fun Map(
                 if(LOG_ENABLED)Log.d("DEBUG",list.toString())
                 if(LOG_ENABLED)Log.d("DEBUG","." + list[2] + ".")
                 anchorRemoteObj = Anchor(
-                    latitude = String.format("%.7f", list[0].toDouble()),
-                    longitude = String.format("%.7f", list[1].toDouble()),
+                    latitude = String.format(Locale.ENGLISH,"%.7f", list[0].toDouble()),
+                    longitude = String.format(Locale.ENGLISH,"%.7f", list[1].toDouble()),
                     anchored = list[2],
                     time = list[3]
                 )
@@ -660,11 +661,11 @@ fun Map(
         lastOptimalSail
     } else lastOptimalSail
     val vMax = if (route[2].toDouble() != -1.0) {
-        lastVMax = String.format("%.2f", route[2].toDouble())
+        lastVMax = String.format(Locale.ENGLISH,"%.2f", route[2].toDouble())
         lastVMax
     } else lastVMax
     val vMaxEff = if (route[3].toDouble() != -1.0) {
-        lastVMaxEff = String.format("%.2f", route[3].toDouble())
+        lastVMaxEff = String.format(Locale.ENGLISH,"%.2f", route[3].toDouble())
         lastVMaxEff
     } else lastVMaxEff
 
@@ -715,6 +716,7 @@ fun Map(
                 item {
                     Text(
                         text = "Rotta: " + String.format(
+                            Locale.ENGLISH,
                             "%.2f$DEGREE_SYMBOL",
                             destinationDirection
                         )
@@ -722,7 +724,8 @@ fun Map(
                 }
                 item { Spacer(modifier = Modifier.height(10.dp)) }
                 item { Text(text = "TWS: $windSpeed $KNOT_SYMBOL") }
-                item { Text(text = "TWA: " + String.format("%.2f$DEGREE_SYMBOL", trueWindAngle)) }
+                item { Text(text = "TWA: " + String.format(
+                    Locale.ENGLISH,"%.2f$DEGREE_SYMBOL", trueWindAngle)) }
                 item { Text(text = "COG: $courseOverGround$DEGREE_SYMBOL") }
                 item { Text(text = "SOG: $speedOverGround $KNOT_SYMBOL") }
                 item { Text(text = "Wind direction: $windDirection$DEGREE_SYMBOL") }

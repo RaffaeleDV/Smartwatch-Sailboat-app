@@ -360,6 +360,7 @@ fun Polars(
 
                                     Text(
                                         text = if (isHeaderRow && isHeaderColumn) vela else if (isHeaderRow) "${windSpeed[col - 1]} kn" else if (isHeaderColumn) "${windAngle[row - 1]}°" else if (!stimeJson.isEmpty) String.format(
+                                            Locale.ENGLISH,
                                             "%.2f",
                                             stimeJson[row - 1].asJsonArray[col - 1].asDouble
                                         ) else "-1",

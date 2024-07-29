@@ -1,5 +1,8 @@
 package com.example.sailboatapp.presentation.data
 
+import com.example.sailboatapp.presentation.network.ConnectionState
+import java.util.Locale
+
 fun windSpeedKnots(value: Float, unit: String): Double {
     if (unit == "N") // knots
         return (value * 1.0)
@@ -36,6 +39,7 @@ fun readNMEA(data: String): HashMap<String, String> {
                                 val latMinutes = lat.substring(2, 8)
 
                                 var latDecimal = String.format(
+                                    Locale.ENGLISH,
                                     "%.7f", (latDegree.toFloat() + (latMinutes.toFloat() / 60))
                                 )
 
@@ -48,6 +52,7 @@ fun readNMEA(data: String): HashMap<String, String> {
                                 val longMinutes = long.substring(3, 8)
 
                                 var longDecimal = String.format(
+                                    Locale.ENGLISH,
                                     "%.7f", (longDegree.toFloat() + (longMinutes.toFloat() / 60))
                                 )
 
@@ -64,7 +69,8 @@ fun readNMEA(data: String): HashMap<String, String> {
                             "MWV" -> {
                                 val windAngle = row[1]
                                 val windSpeed =
-                                    String.format("%.2f", windSpeedKnots(row[3].toFloat(), row[4]))
+                                    String.format(
+                                        Locale.ENGLISH,"%.2f", windSpeedKnots(row[3].toFloat(), row[4]))
 
                                 hm["windAngle"] = windAngle
                                 hm["windSpeed"] = windSpeed
