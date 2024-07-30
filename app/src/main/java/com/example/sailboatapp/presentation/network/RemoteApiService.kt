@@ -24,8 +24,9 @@ interface RemoteApiService {
 
     @POST("inviaAncora.php")
     suspend fun setAncora(@Body body: String): String
+
     @GET("Client/stimeVelocita.json")
-    suspend fun getStime() : String
+    suspend fun getStime(): String
 }
 
 object RemoteApi {

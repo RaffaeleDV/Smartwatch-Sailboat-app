@@ -11,14 +11,10 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.sailboatapp.presentation.network.ServerManager
-import com.example.sailboatapp.presentation.network.connectionState
 import com.example.sailboatapp.presentation.ui.SailboatApp
 import com.example.sailboatapp.presentation.ui.screen.LOG_ENABLED
-import com.example.sailboatapp.presentation.ui.screen.LocalViewModel
-import com.example.sailboatapp.presentation.ui.screen.RemoteViewModel
 import com.example.sailboatapp.presentation.ui.theme.SailboatappTheme
 
 
@@ -27,21 +23,21 @@ var red = 0xFFFF723A
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var serverManager : ServerManager
+    private lateinit var serverManager: ServerManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
 
         super.onCreate(savedInstanceState)
         serverManager = ServerManager(this)
-        if(LOG_ENABLED) Log.d("DEBUG","startServerCheck")
+        if (LOG_ENABLED) Log.d("DEBUG", "startServerCheck")
         serverManager.startServerCheck()
 
 
         //setTheme(android.R.style.Theme_DeviceDefault)
 
         setContent {
-            SailboatappTheme{
+            SailboatappTheme {
                 SailboatApp(this)
 
             }

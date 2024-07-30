@@ -15,7 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.CircularProgressIndicator
@@ -29,11 +28,8 @@ import com.example.sailboatapp.presentation.network.ConnectionState
 import com.example.sailboatapp.presentation.network.connectionState
 import com.example.sailboatapp.presentation.ui.screen.Homepage
 import com.example.sailboatapp.presentation.ui.screen.LOG_ENABLED
-import com.example.sailboatapp.presentation.ui.screen.LocalViewModel
 import com.example.sailboatapp.presentation.ui.screen.Map
 import com.example.sailboatapp.presentation.ui.screen.Polars
-import com.example.sailboatapp.presentation.ui.screen.RemoteViewModel
-import com.example.sailboatapp.presentation.ui.screen.Test
 import kotlinx.coroutines.delay
 
 
@@ -44,18 +40,18 @@ const val KNOT_SYMBOL = "Kn"
 @Composable
 fun SailboatApp(
     mainActivity: MainActivity,
-   ) {
+) {
 
     var isSwippeEnabled by remember { mutableStateOf(true) }
 
-    if(LOG_ENABLED) Log.d("DEBUG","connectionState: $connectionState")
+    if (LOG_ENABLED) Log.d("DEBUG", "connectionState: $connectionState")
 
     var isReady by remember { mutableStateOf(false) }
     //val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         while (true) {
-            if(LOG_ENABLED)Log.d("DEBUG","connectionState: $connectionState")
+            if (LOG_ENABLED) Log.d("DEBUG", "connectionState: $connectionState")
             // Simulate a delay
             if (connectionState == ConnectionState.Remote || connectionState == ConnectionState.Local) {
                 isReady = true
@@ -68,7 +64,7 @@ fun SailboatApp(
     if (isReady) {
         // UI that depends on isReady being true
         val navController = rememberSwipeDismissableNavController()
-        if(connectionState == ConnectionState.Remote || connectionState == ConnectionState.Local){
+        if (connectionState == ConnectionState.Remote || connectionState == ConnectionState.Local) {
             SwipeDismissableNavHost(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -79,17 +75,17 @@ fun SailboatApp(
             ) {
                 composable("homepage") {
                     Homepage(navController, mainActivity) { newValues ->
-                        isSwippeEnabled = newValues as Boolean
+                        isSwippeEnabled = newValues
                     }
                 }
                 composable("polars") {
                     Polars(navController) { newValues ->
-                        isSwippeEnabled = newValues as Boolean
+                        isSwippeEnabled = newValues
                     }
                 }
                 composable("map") {
                     Map(navController) { newValues ->
-                        isSwippeEnabled = newValues as Boolean
+                        isSwippeEnabled = newValues
                     }
                 }
                 /*composable("test") {
@@ -107,7 +103,8 @@ fun SailboatApp(
         ) {
             Text(
                 text = "Connection ${connectionState}...",
-                fontSize = 18.sp)
+                fontSize = 18.sp
+            )
             /*Button(
                 modifier = Modifier.width(100.dp),
                 onClick = { mainActivity.recreate() }) {
@@ -121,7 +118,7 @@ fun SailboatApp(
             strokeWidth = 5.dp,
             trackColor = MaterialTheme.colors.primaryVariant,
 
-        )
+            )
     }
 
 }

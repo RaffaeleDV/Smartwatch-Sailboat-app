@@ -9,11 +9,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sailboatapp.presentation.data.readNMEA
 import com.example.sailboatapp.presentation.model.Anchor
+import com.example.sailboatapp.presentation.model.Raffica
 import com.example.sailboatapp.presentation.network.LocalApi
 import com.example.sailboatapp.presentation.network.LocalWebSocketListener
-import com.example.sailboatapp.presentation.model.Raffica
-import com.example.sailboatapp.presentation.network.ConnectionState
-import com.example.sailboatapp.presentation.network.connectionState
 import com.google.gson.JsonObject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,6 +56,7 @@ sealed interface RecInfoState {
 
 private var i = 0
 private var j = 0
+
 class LocalViewModel : ViewModel() {
     /** The mutable State that stores the status of the most recent request */
     private val _data = MutableStateFlow<HashMap<String, String>>(HashMap<String, String>())
@@ -77,7 +76,7 @@ class LocalViewModel : ViewModel() {
      * Call on init so we can display status immediately.
      */
     init {
-        if(LOG_ENABLED) Log.d("DEBUG","Connessione locale: init $i")
+        if (LOG_ENABLED) Log.d("DEBUG", "Connessione locale: init $i")
         getNmeaLocal()
         startRepeatingRequests()
         i++
@@ -91,13 +90,13 @@ class LocalViewModel : ViewModel() {
         viewModelScope.launch {
             while (true) {
                 //if (connectionState == ConnectionState.Local) {
-                    if (LOG_ENABLED) Log.d("DEBUG", "Connessione locale: repeat $j of $i")
-                    getRaffica()
-                    getAnchor()
-                    getStimeVelocita()
-                    recInfo()
-                    delay(5000) // Delay for 5 seconds
-                    j++
+                if (LOG_ENABLED) Log.d("DEBUG", "Connessione locale: repeat $j of $i")
+                getRaffica()
+                getAnchor()
+                getStimeVelocita()
+                recInfo()
+                delay(5000) // Delay for 5 seconds
+                j++
                 //}
             }
         }
@@ -119,7 +118,7 @@ class LocalViewModel : ViewModel() {
         }
     }
 
-    fun getStimeVelocita(){
+    fun getStimeVelocita() {
         viewModelScope.launch {
             stimeVelocitaUiState = try {
                 //println("Try raffica")
@@ -156,7 +155,7 @@ class LocalViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val result = LocalApi.retrofitNmeaForwarderService.calculatePolars()
-                if(LOG_ENABLED)Log.d("DEBUG","calculatePolars: $result")
+                if (LOG_ENABLED) Log.d("DEBUG", "calculatePolars: $result")
 
             } catch (e: IOException) {
 
@@ -168,7 +167,7 @@ class LocalViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val result = LocalApi.retrofitNmeaForwarderService.clearPolars()
-                if(LOG_ENABLED)Log.d("DEBUG","clearPolars: $result")
+                if (LOG_ENABLED) Log.d("DEBUG", "clearPolars: $result")
 
             } catch (e: IOException) {
 
@@ -176,17 +175,18 @@ class LocalViewModel : ViewModel() {
         }
     }
 
-    fun recPolars(sails : String) {
+    fun recPolars(sails: String) {
         viewModelScope.launch {
             try {
                 val result = LocalApi.retrofitNmeaForwarderService.recPolars(sails)
-                if(LOG_ENABLED)Log.d("DEBUG","recPolars: $result")
+                if (LOG_ENABLED) Log.d("DEBUG", "recPolars: $result")
 
             } catch (e: IOException) {
 
             }
         }
     }
+
     private fun recInfo() {
         viewModelScope.launch {
             try {
@@ -195,7 +195,7 @@ class LocalViewModel : ViewModel() {
                 recInfoState = RecInfoState.Success(
                     result
                 )
-                if(LOG_ENABLED)Log.d("DEBUG","recInfo: $result")
+                if (LOG_ENABLED) Log.d("DEBUG", "recInfo: $result")
             } catch (e: IOException) {
                 recInfoState = RecInfoState.Error
 
@@ -203,11 +203,12 @@ class LocalViewModel : ViewModel() {
         }
     }
 
-    fun setAnchor(latitude : String, longitude : String, anchored : String) {
+    fun setAnchor(latitude: String, longitude: String, anchored: String) {
         viewModelScope.launch {
             try {
-                val result = LocalApi.retrofitNmeaForwarderService.setAnchor(latitude, longitude, anchored)
-                if(LOG_ENABLED)Log.d("DEBUG","Ancora set: "+ result)
+                val result =
+                    LocalApi.retrofitNmeaForwarderService.setAnchor(latitude, longitude, anchored)
+                if (LOG_ENABLED) Log.d("DEBUG", "Ancora set: " + result)
                 setAnchorUiState = SetAnchorLocalUiState.Success(
                     result
                 )
@@ -223,7 +224,10 @@ class LocalViewModel : ViewModel() {
         val listener = LocalWebSocketListener { bytes ->
             viewModelScope.launch {
                 _data.value = processData(bytes) // Update the state with the received data
-                if(LOG_ENABLED)Log.d("DEBUG","Connessione locale: nmea local received")
+                if (LOG_ENABLED) Log.d(
+                    "DEBUG",
+                    "Connessione locale: nmea local received ${data.value}"
+                )
             }
         }
         val webSocket: WebSocket = client.newWebSocket(request, listener)
@@ -236,7 +240,14 @@ class LocalViewModel : ViewModel() {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             readNMEA(String(Base64.getDecoder().decode(bytes.base64())))
         } else {
-            readNMEA(String(android.util.Base64.decode(bytes.base64(), android.util.Base64.DEFAULT)))
+            readNMEA(
+                String(
+                    android.util.Base64.decode(
+                        bytes.base64(),
+                        android.util.Base64.DEFAULT
+                    )
+                )
+            )
         }
     }
 

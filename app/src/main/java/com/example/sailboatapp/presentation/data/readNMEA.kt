@@ -1,6 +1,6 @@
 package com.example.sailboatapp.presentation.data
 
-import com.example.sailboatapp.presentation.network.ConnectionState
+import android.util.Log
 import java.util.Locale
 
 fun windSpeedKnots(value: Float, unit: String): Double {
@@ -18,7 +18,9 @@ fun readNMEA(data: String): HashMap<String, String> {
     val hm = HashMap<String, String>()
     val sentenze = data.split('\n')
 
-    sentenze.forEachIndexed { index, s ->
+    Log.d("DEBUG", "readNMEA")
+
+    sentenze.forEachIndexed { _, s ->
         run {
             //println("Index: "+ index + " Singola: " + s)
 
@@ -43,8 +45,8 @@ fun readNMEA(data: String): HashMap<String, String> {
                                     "%.7f", (latDegree.toFloat() + (latMinutes.toFloat() / 60))
                                 )
 
-                                if (row[2].equals("S")) {
-                                    latDecimal = "-" + latDecimal
+                                if (row[2] == "S") {
+                                    latDecimal = "-$latDecimal"
                                 }
 
                                 val long = row[3]
@@ -56,8 +58,8 @@ fun readNMEA(data: String): HashMap<String, String> {
                                     "%.7f", (longDegree.toFloat() + (longMinutes.toFloat() / 60))
                                 )
 
-                                if (row[4].equals("W")) {
-                                    longDecimal = "-" + longDecimal
+                                if (row[4] == "W") {
+                                    longDecimal = "-$longDecimal"
                                 }
 
                                 hm["latitude"] = latDecimal
@@ -70,7 +72,10 @@ fun readNMEA(data: String): HashMap<String, String> {
                                 val windAngle = row[1]
                                 val windSpeed =
                                     String.format(
-                                        Locale.ENGLISH,"%.2f", windSpeedKnots(row[3].toFloat(), row[4]))
+                                        Locale.ENGLISH,
+                                        "%.2f",
+                                        windSpeedKnots(row[3].toFloat(), row[4])
+                                    )
 
                                 hm["windAngle"] = windAngle
                                 hm["windSpeed"] = windSpeed

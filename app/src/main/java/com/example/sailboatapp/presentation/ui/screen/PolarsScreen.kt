@@ -1,7 +1,6 @@
 package com.example.sailboatapp.presentation.ui.screen
 
 
-import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -54,11 +53,8 @@ import com.example.sailboatapp.presentation.network.connectionState
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import org.mozilla.geckoview.GeckoRuntime
-import org.mozilla.geckoview.GeckoRuntimeSettings
 import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoView
-import java.io.BufferedReader
-import java.io.InputStreamReader
 
 
 @Composable
@@ -79,7 +75,6 @@ fun Polars(
     val vignetteState by remember { mutableStateOf(VignettePosition.TopAndBottom) }
 
 
-
     val showVignette by remember {
         mutableStateOf(true)
     }
@@ -96,21 +91,21 @@ fun Polars(
 
 
 
-    if(connectionState == ConnectionState.Local){
+    if (connectionState == ConnectionState.Local) {
         val localViewModel = InstantiateViewModel.instantiateLocalViewModel()
         //recInfo local
         val recInfoUiState: RecInfoState = localViewModel.recInfoState
 
         when (recInfoUiState) {
-            is RecInfoState.Error -> if(LOG_ENABLED) Log.d("DEBUG","Error recInfo local")
-            is RecInfoState.Loading -> if(LOG_ENABLED) Log.d("DEBUG","Loading recInfo local")
+            is RecInfoState.Error -> if (LOG_ENABLED) Log.d("DEBUG", "Error recInfo local")
+            is RecInfoState.Loading -> if (LOG_ENABLED) Log.d("DEBUG", "Loading recInfo local")
             is RecInfoState.Success -> {
                 val result = (localViewModel.recInfoState as RecInfoState.Success).infoRec
-                if(LOG_ENABLED) Log.d("DEBUG","Success: RecInfo local $result")
-                if(result == "true"){
+                if (LOG_ENABLED) Log.d("DEBUG", "Success: RecInfo local $result")
+                if (result == "true") {
                     polarRecState = true
                     polarString = "Termina"
-                }else{
+                } else {
                     polarRecState = false
                     polarString = "Inizia registrazione"
                 }
@@ -121,18 +116,26 @@ fun Polars(
         val stimeVelocitaUiState: StimeVelocitaUiState = localViewModel.stimeVelocitaUiState
 
         when (stimeVelocitaUiState) {
-            is StimeVelocitaUiState.Error -> if(LOG_ENABLED) Log.d("DEBUG","Error stime velocita local")
-            is StimeVelocitaUiState.Loading -> if(LOG_ENABLED) Log.d("DEBUG","Loading stime velocita local")
+            is StimeVelocitaUiState.Error -> if (LOG_ENABLED) Log.d(
+                "DEBUG",
+                "Error stime velocita local"
+            )
+
+            is StimeVelocitaUiState.Loading -> if (LOG_ENABLED) Log.d(
+                "DEBUG",
+                "Loading stime velocita local"
+            )
+
             is StimeVelocitaUiState.Success -> {
                 connectionState = ConnectionState.Local
                 val result =
                     (localViewModel.stimeVelocitaUiState as StimeVelocitaUiState.Success).stimeVelocita
-                if(LOG_ENABLED) Log.d("DEBUG","Success: Stime velocita local $result")
+                if (LOG_ENABLED) Log.d("DEBUG", "Success: Stime velocita local $result")
 
                 stimeVelocita = result
-                result.keySet().forEach{
-                    if(it == "inProgress"){
-                        if(LOG_ENABLED) Log.d("DEBUG","Calcolo in corso")
+                result.keySet().forEach {
+                    if (it == "inProgress") {
+                        if (LOG_ENABLED) Log.d("DEBUG", "Calcolo in corso")
                     }
 
 
@@ -143,23 +146,31 @@ fun Polars(
             }
         }
 
-    }else if(connectionState == ConnectionState.Remote){
+    } else if (connectionState == ConnectionState.Remote) {
         val remoteViewModel = InstantiateViewModel.instantiateRemoteViewModel()
 
         //Stime velocita remote
         val getstimeRemoteUiState: GetStimeRemoteUiState = remoteViewModel.getStimeRemoteUiState
 
         when (getstimeRemoteUiState) {
-            is GetStimeRemoteUiState.Error -> if(LOG_ENABLED) Log.d("DEBUG","Error stime velocita remote")
-            is GetStimeRemoteUiState.Loading -> if(LOG_ENABLED) Log.d("DEBUG","Loading stime velocita remote")
+            is GetStimeRemoteUiState.Error -> if (LOG_ENABLED) Log.d(
+                "DEBUG",
+                "Error stime velocita remote"
+            )
+
+            is GetStimeRemoteUiState.Loading -> if (LOG_ENABLED) Log.d(
+                "DEBUG",
+                "Loading stime velocita remote"
+            )
+
             is GetStimeRemoteUiState.Success -> {
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
-                if(LOG_ENABLED) Log.d("DEBUG","Success: Stime velocita remote")
+                if (LOG_ENABLED) Log.d("DEBUG", "Success: Stime velocita remote")
                 stimeVelocita = Gson().fromJson(
                     (remoteViewModel.getStimeRemoteUiState as GetStimeRemoteUiState.Success).stime,
                     JsonObject::class.java
                 )
-                if(LOG_ENABLED) Log.d("DEBUG","Success: Stime velocita remote $stimeVelocita")
+                if (LOG_ENABLED) Log.d("DEBUG", "Success: Stime velocita remote $stimeVelocita")
             }
         }
 
@@ -181,7 +192,8 @@ fun Polars(
         TimeText()
     }/*, pageIndicator = {
         HorizontalPageIndicator(pageIndicatorState = pageIndicatorState)
-    }*/) {
+    }*/
+    ) {
 
         ScalingLazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -219,8 +231,8 @@ fun Polars(
                     )
                 }
             }
-            if(LOG_ENABLED) Log.d("DEBUG","connectionState = $connectionState")
-            if(connectionState == ConnectionState.Local){
+            if (LOG_ENABLED) Log.d("DEBUG", "connectionState = $connectionState")
+            if (connectionState == ConnectionState.Local) {
                 val localViewModel = InstantiateViewModel.instantiateLocalViewModel()
                 item { Spacer(modifier = Modifier.height(20.dp)) }
                 item {
@@ -238,7 +250,7 @@ fun Polars(
                         }, modifier = Modifier
                             .height(30.dp)
                             .width(150.dp)
-                            //.alpha(if (connectionState == ConnectionState.Local) 1f else 0f)
+                        //.alpha(if (connectionState == ConnectionState.Local) 1f else 0f)
                     ) {
                         Text(polarString)
                     }
@@ -254,7 +266,7 @@ fun Polars(
                             modifier = Modifier
                                 .height(30.dp)
                                 .width(70.dp)
-                                //.alpha(if (connectionState == ConnectionState.Local) 1f else 0f)
+                            //.alpha(if (connectionState == ConnectionState.Local) 1f else 0f)
                         ) {
                             Text("Calcola")
                         }
@@ -263,7 +275,7 @@ fun Polars(
                             onClick = { localViewModel.clearPolars() },
                             modifier = Modifier
                                 .height(30.dp)
-                                //.alpha(if (connectionState == ConnectionState.Local) 1f else 0f)
+                            //.alpha(if (connectionState == ConnectionState.Local) 1f else 0f)
                         ) {
                             Text("Clean")
                         }
@@ -421,10 +433,10 @@ fun Polars(
                 Button(
                     onClick = {
                         showDialog = false
-                        if(LOG_ENABLED) Log.d("DEBUG","Text= $textState")
+                        if (LOG_ENABLED) Log.d("DEBUG", "Text= $textState")
                         val localViewModel = InstantiateViewModel.instantiateLocalViewModel()
                         localViewModel.recPolars(textState)
-                        if(textState != ""){
+                        if (textState != "") {
                             polarString = "Termina"
                         }
                     }, modifier = Modifier.size(30.dp)
@@ -489,9 +501,9 @@ fun Polars(
                         var windSpeed = arrayListOf("-1", "-1", "-1", "-1", "-1", "-1", "-1")
                         var stime = ArrayList<Any>()*/
 
-                        stimeVelocita.keySet().forEach{
-                            if(it == "inProgress"){
-                                if(LOG_ENABLED) Log.d("DEBUG","Calcolo in corso")
+                        stimeVelocita.keySet().forEach {
+                            if (it == "inProgress") {
+                                if (LOG_ENABLED) Log.d("DEBUG", "Calcolo in corso")
                             }
                         }
 
@@ -549,7 +561,10 @@ fun Polars(
 
                         var span = ""
 
-                        if(LOG_ENABLED) Log.d("DEBUG","Numero vele: ${stimeVelocita.keySet().size}")
+                        if (LOG_ENABLED) Log.d(
+                            "DEBUG",
+                            "Numero vele: ${stimeVelocita.keySet().size}"
+                        )
                         if (stimeVelocita.keySet().size > 1) {
                             span =
                                 "<span style=\"display:block; height: 100px; padding: 400px;\"></span>"
@@ -558,11 +573,12 @@ fun Polars(
                         //<script src="https://cdn.plot.ly/plotly-2.25.2.min.js"></script>
                         //https://bruce.altervista.org/Client/script/plotly-2.25.2.min.js
 
-                        val libraryAddress : String
+                        val libraryAddress: String
 
-                        if(isConnectionLocal()){
-                            libraryAddress = "http://$raspberryIp:$websockifySocket/script/plotly-2.25.2.min.js"
-                        }else{
+                        if (isConnectionLocal()) {
+                            libraryAddress =
+                                "http://$raspberryIp:$websockifySocket/script/plotly-2.25.2.min.js"
+                        } else {
                             libraryAddress = "https://cdn.plot.ly/plotly-2.25.2.min.js"
                         }
 
@@ -758,43 +774,43 @@ fun Polars(
 </html>           
         """
 
-               /*         val test2 = """
-                            <!DOCTYPE html>
-<html lang="it">
-   <head>
-      <title>Page Title</title>
-      <link rel="stylesheet" href='style.css'>
-      <style>
-         body, html {
-         height: 100%;
-         margin: 0;
-         display: flex;
-         justify-content: center;
-         align-items: center;
-         background-color: rgb(170, 211, 223);
-         }
-      </style>
-      <script src="http://$raspberryIp:8080/script/plotly-2.25.2.min.js"></script>
-      <script>console.log("Test = Prova1");</script>
-   </head>
-   <body>
-      <div id='container' class="container">
-         $span
-         <h1>Test</h1>
-      </div>
-      <div id='stime' style="display:none" >
-         $stimeVelocita
-      </div>
-      <script>
-         console.log("script");
-         var stime = document.getElementById("stime").innerHTML;
-         var dati = JSON.parse(stime);
-         var key = Object.keys(dati);
+                        /*         val test2 = """
+                                     <!DOCTYPE html>
+         <html lang="it">
+            <head>
+               <title>Page Title</title>
+               <link rel="stylesheet" href='style.css'>
+               <style>
+                  body, html {
+                  height: 100%;
+                  margin: 0;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  background-color: rgb(170, 211, 223);
+                  }
+               </style>
+               <script src="http://$raspberryIp:8080/script/plotly-2.25.2.min.js"></script>
+               <script>console.log("Test = Prova1");</script>
+            </head>
+            <body>
+               <div id='container' class="container">
+                  $span
+                  <h1>Test</h1>
+               </div>
+               <div id='stime' style="display:none" >
+                  $stimeVelocita
+               </div>
+               <script>
+                  console.log("script");
+                  var stime = document.getElementById("stime").innerHTML;
+                  var dati = JSON.parse(stime);
+                  var key = Object.keys(dati);
 
-      </script>
-   </body>
-</html>
-        """*/
+               </script>
+            </body>
+         </html>
+                 """*/
 
 
 
@@ -807,7 +823,7 @@ fun Polars(
 
                     }, update = {
                     })
-                if(isLoading){
+                if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier
                             .fillMaxSize()
@@ -816,10 +832,10 @@ fun Polars(
                         strokeWidth = 8.dp,
                         trackColor = MaterialTheme.colors.primaryVariant,
 
-                    )
+                        )
                 }
 
-                if(!isLoading){
+                if (!isLoading) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         Button(
                             onClick = { showChart = false },

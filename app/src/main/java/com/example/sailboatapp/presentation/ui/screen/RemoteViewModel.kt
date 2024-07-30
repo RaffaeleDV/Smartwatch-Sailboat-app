@@ -6,9 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.sailboatapp.presentation.network.ConnectionState
 import com.example.sailboatapp.presentation.network.RemoteApi
-import com.example.sailboatapp.presentation.network.connectionState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.IOException
@@ -16,6 +14,7 @@ import java.io.IOException
 
 private var i = 0
 private var j = 0
+
 sealed interface RemoteUiState {
     data class Success(val nmea: String) : RemoteUiState
     object Error : RemoteUiState
@@ -54,7 +53,7 @@ class RemoteViewModel : ViewModel() {
      * Call on init so we can display status immediately.
      */
     init {
-        if(LOG_ENABLED) Log.d("DEBUG","Connessione remota: init $i")
+        if (LOG_ENABLED) Log.d("DEBUG", "Connessione remota: init $i")
         startRepeatingRequests()
         i++
     }
@@ -63,12 +62,12 @@ class RemoteViewModel : ViewModel() {
         viewModelScope.launch {
             while (true) {
                 /*if(connectionState == ConnectionState.Remote){*/
-                    if(LOG_ENABLED) Log.d("DEBUG","Connessione remota: repeat $j of $i")
-                    getNmeaRemote()
-                    getAnchor()
-                    getStimeVelocita()
-                    delay(5000) // Delay for 5 seconds
-                    j++
+                if (LOG_ENABLED) Log.d("DEBUG", "Connessione remota: repeat $j of $i")
+                getNmeaRemote()
+                getAnchor()
+                getStimeVelocita()
+                delay(5000) // Delay for 5 seconds
+                j++
                 //}
             }
         }
@@ -121,7 +120,7 @@ class RemoteViewModel : ViewModel() {
         }
     }
 
-    fun getStimeVelocita(){
+    fun getStimeVelocita() {
         viewModelScope.launch {
             getStimeRemoteUiState = try {
                 //("Try")
@@ -129,7 +128,7 @@ class RemoteViewModel : ViewModel() {
                 GetStimeRemoteUiState.Success(
                     result
                 )
-            }catch (e: IOException){
+            } catch (e: IOException) {
                 GetStimeRemoteUiState.Error
             }
         }
