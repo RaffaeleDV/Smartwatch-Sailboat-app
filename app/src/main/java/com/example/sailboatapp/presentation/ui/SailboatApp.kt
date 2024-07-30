@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,7 +15,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.rotary.onRotaryScrollEvent
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.wear.compose.material.CircularProgressIndicator
+import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
@@ -73,23 +78,23 @@ fun SailboatApp(
                 startDestination = "homepage"
             ) {
                 composable("homepage") {
-                    Homepage(navController, isSwippeEnabled, mainActivity) { newValues ->
+                    Homepage(navController, mainActivity) { newValues ->
                         isSwippeEnabled = newValues as Boolean
                     }
                 }
                 composable("polars") {
-                    Polars(navController, isSwippeEnabled) { newValues ->
+                    Polars(navController) { newValues ->
                         isSwippeEnabled = newValues as Boolean
                     }
                 }
                 composable("map") {
-                    Map(navController, isSwippeEnabled) { newValues ->
+                    Map(navController) { newValues ->
                         isSwippeEnabled = newValues as Boolean
                     }
                 }
-                composable("test") {
+                /*composable("test") {
                     Test()
-                }
+                }*/
             }
         }
 
@@ -109,6 +114,14 @@ fun SailboatApp(
                 Text("Refresh")
             }*/
         }
+        CircularProgressIndicator(
+            modifier = Modifier
+                .fillMaxSize()
+                .size(100.dp),
+            strokeWidth = 5.dp,
+            trackColor = MaterialTheme.colors.primaryVariant,
+
+        )
     }
 
 }

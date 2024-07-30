@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,27 +17,37 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
 import androidx.wear.compose.foundation.lazy.AutoCenteringParams
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
+import androidx.wear.compose.foundation.lazy.ScalingLazyListState
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
+import androidx.wear.compose.foundation.rememberActiveFocusRequester
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
@@ -58,9 +70,11 @@ import com.example.sailboatapp.presentation.network.connectionState
 import com.example.sailboatapp.presentation.ui.DEGREE_SYMBOL
 import com.example.sailboatapp.presentation.ui.KNOT_SYMBOL
 import com.google.gson.JsonObject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 class LocalConnection {
-    var localConnectionState: Boolean = false
+    private var localConnectionState: Boolean = false
     fun setConnectionState(state: Boolean) {
         localConnectionState = state    }
     fun getConnectionState(): Boolean {
@@ -75,7 +89,7 @@ fun setLocalConnection(state: Boolean) {
     locCon.setConnectionState(state)
 }
 
-val LOG_ENABLED = true
+const val LOG_ENABLED = true
 
 var raspberryIp = RASPBERRY_IP_DEFAULT //Raspberry ip
 var websockifySocket = WEBSOCKIFY_SOCKET_DEFAULT
@@ -99,10 +113,10 @@ var nmeaDataRemote = HashMap<String, String>()
 var nmeaDataLocal : State<HashMap<String, String>>? = null
 
 var stimeVelocita = JsonObject()
+@OptIn(ExperimentalWearFoundationApi::class)
 @Composable
 fun Homepage(
     navController: NavHostController,
-    isSwippeEnabled: Boolean,
     mainActivity: MainActivity,
     onSwipeChange: (Boolean) -> Unit
 ) {
@@ -113,7 +127,10 @@ fun Homepage(
     val savedIp = getString(LocalContext.current, "ip")
     if(LOG_ENABLED)Log.d("DEBUG", "savedIp: $savedIp")
     //println("Saved IP= $savedIp")
-    if(savedIp != null && savedIp != ""){
+
+    val regex = Regex("^\\d+\\.\\d+\\.\\d+\\.\\d+$")
+
+    if(savedIp != null && savedIp != "" && regex.matches(savedIp)){
         raspberryIp = savedIp
     }
     val savedSocket = getString(LocalContext.current, "socket")
@@ -135,7 +152,7 @@ fun Homepage(
         val localViewModel = InstantiateViewModel.instantiateLocalViewModel()
 
         //Raffica local
-        val rafficaUiState: RafficaUiState = localViewModel!!.rafficaUiState
+        val rafficaUiState: RafficaUiState = localViewModel.rafficaUiState
 
         when (rafficaUiState) {
             is RafficaUiState.Error -> if(LOG_ENABLED)Log.d("DEBUG","Error local raffica connection")
@@ -143,18 +160,18 @@ fun Homepage(
             is RafficaUiState.Success -> {
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
                 if(LOG_ENABLED)Log.d("DEBUG","Success: local connection Raffica")
-                raffica = (localViewModel!!.rafficaUiState as RafficaUiState.Success).raffica
+                raffica = (localViewModel.rafficaUiState as RafficaUiState.Success).raffica
                 if(LOG_ENABLED)Log.d("DEBUG","Connessione locale: raffica")
             }
         }
 
         //Neam sentence local from websocket
-        nmeaDataLocal = localViewModel?.data?.collectAsState()
+        nmeaDataLocal = localViewModel.data.collectAsState()
 
     }else if (connectionState == ConnectionState.Remote){
 
         //Nmea sentence remote
-        var remoteViewModel = InstantiateViewModel.instantiateRemoteViewModel()
+        val remoteViewModel = InstantiateViewModel.instantiateRemoteViewModel()
 
         val remoteUiState: RemoteUiState = remoteViewModel.remoteUiState
         when (remoteUiState) {
@@ -173,8 +190,6 @@ fun Homepage(
 
     }
 
-
-
     val listState = rememberScalingLazyListState()
     val vignetteState by remember { mutableStateOf(VignettePosition.TopAndBottom) }
 
@@ -183,6 +198,10 @@ fun Homepage(
     }
 
     var showDialog by remember { mutableStateOf(false) }
+
+    val focusRequester =  rememberActiveFocusRequester()
+
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(modifier = Modifier
         .fillMaxWidth()
@@ -197,14 +216,21 @@ fun Homepage(
             }
         }, timeText = {
             TimeText()
-        })
-    /* pageIndicator = {
-         HorizontalPageIndicator(pageIndicatorState = pageIndicatorState)
-     })*/ {
+        }){
         ScalingLazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .fillMaxHeight(),
+                .fillMaxHeight()
+                .onRotaryScrollEvent {
+                    if(LOG_ENABLED)Log.d("DEBUG","Rotatory event")
+                    coroutineScope.launch {
+                        if(LOG_ENABLED)Log.d("DEBUG","Rotatory coroutine")
+                        listState.scrollBy(it.verticalScrollPixels)
+                    }
+                    true // it means that we are handling the event with this callback
+                }
+                .focusRequester(focusRequester)
+                .focusable(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceAround,
             autoCentering = AutoCenteringParams(itemIndex = 4),
@@ -228,7 +254,6 @@ fun Homepage(
                 )
             }
             item {
-
                 Text(
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
@@ -376,6 +401,7 @@ fun Homepage(
                     Text("Test")
                 }
             }*/
+            item { Spacer(modifier = Modifier.height(10.dp)) }
             item {
                 Button(
                     onClick = {
@@ -383,9 +409,14 @@ fun Homepage(
                     },
                     modifier = Modifier.height(30.dp)
                 ) {
-                    Text(text = "Close App")
+                    Text(text = "Close")
                 }
             }
+        }
+
+        LaunchedEffect(Unit){
+            if(LOG_ENABLED)Log.d("DEBUG","Rotatory focus")
+            focusRequester.requestFocus()
         }
 
         var textIp by remember { mutableStateOf("") }
@@ -420,6 +451,9 @@ fun Homepage(
                         },
                         textStyle = TextStyle.Default,
                         singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Text
+                        ),
                         decorationBox = { innerTextField ->
                             Row(
                                 modifier = Modifier

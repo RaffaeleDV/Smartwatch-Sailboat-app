@@ -89,7 +89,7 @@ fun trovaAngoli(windAngles: JsonArray, destinationDirection: Double): Array<Arra
         indice1 = 7
         indice2 = 7
     }
-    windAngles.forEachIndexed(action = { i, element ->
+    windAngles.forEachIndexed(action = { i, _ ->
         val angoloCorrente = windAngles[i]
         val angoloSuccessivo = windAngles[(i + 1) % sizeAngoli]
         if (angoloCorrente.asInt <= destinationDirection && angoloSuccessivo.asInt >= destinationDirection) {
@@ -112,7 +112,7 @@ fun trovaVelocita(windSpeeds: JsonArray, windSpeed: Double): Array<Array<Int>> {
     var indice2 = -1
     val sizeVelocita = windSpeeds.size()
 
-    windSpeeds.forEachIndexed(action = { i, element ->
+    windSpeeds.forEachIndexed(action = { i, _ ->
         val vCorrente = windSpeeds[i]
         val vSuccessivo = windSpeeds[(i + 1) % sizeVelocita]
 
@@ -158,7 +158,7 @@ fun mediaPonderata(
 
     val mediaPonderata =
         (peso1 * pesov1 * stime[indiciAngoli[0]].asJsonArray[indiciVelocita[0]].asInt + peso1 * pesov2 * stime[indiciAngoli[0]].asJsonArray[indiciVelocita[1]].asInt + peso2 * pesov1 * stime[indiciAngoli[1]].asJsonArray[indiciVelocita[0]].asInt + peso2 * pesov2 * stime[indiciAngoli[1]].asJsonArray[indiciVelocita[1]].asInt)
-    return mediaPonderata;
+    return mediaPonderata
 }
 
 fun routeCalculator(
@@ -181,10 +181,10 @@ fun routeCalculator(
             return arrayOf(maxAngle.toString(), optimalSail, vMax.toString(), vMaxEff.toString())
         }
 
-        var vela = it
-        var windAngles = stimeVelocita.getAsJsonObject(it).getAsJsonArray("angoliVento")
-        var windSpeeds = stimeVelocita.getAsJsonObject(it).getAsJsonArray("velocitaVento")
-        var stime = stimeVelocita.getAsJsonObject(it).getAsJsonArray("stimeVelocitaBarca")
+        val vela = it
+        val windAngles = stimeVelocita.getAsJsonObject(it).getAsJsonArray("angoliVento")
+        val windSpeeds = stimeVelocita.getAsJsonObject(it).getAsJsonArray("velocitaVento")
+        val stime = stimeVelocita.getAsJsonObject(it).getAsJsonArray("stimeVelocitaBarca")
 
         if(LOG_ENABLED)Log.d("DEBUG","Vela: $vela")
         if(LOG_ENABLED)Log.d("DEBUG","WindAngles: $windAngles")
@@ -212,8 +212,8 @@ fun routeCalculator(
 
         val distanza1 = abs(angoliIndex[0].asList()[0] - destinationDirection)
         val distanza2 = abs(angoliIndex[0].asList()[1] - destinationDirection)
-        val peso1 = 1 - distanza1 / (distanza1 + distanza2)
-        val peso2 = 1 - peso1
+        //val peso1 = 1 - distanza1 / (distanza1 + distanza2)
+        //val peso2 = 1 - peso1
         var angoloSugg = -1
         if (distanza1 >= distanza2) {
             angoloSugg = angoliIndex[0].asList()[0]
@@ -248,7 +248,7 @@ fun getTWA(windDirection: Double, shipDirection: Double): Double {
     if (relativeWindDirection > 180) {
         relativeWindDirection = 360.0 - relativeWindDirection
     }
-    return relativeWindDirection;
+    return relativeWindDirection
 }
 
 fun angleBetweenPoints(
@@ -303,7 +303,7 @@ fun getDistanceBetweenPointsMeters(
 ): Int {
     //if(LOG_ENABLED)Log.d("DEBUG","1input data= "+latitude1+" "+longitude1+ " "+latitude2+" "+longitude2)
     return (getDistanceBetweenPoints(
-        latitude1, longitude1, latitude2, longitude2, unit = "kilometers"
+        latitude1, longitude1, latitude2, longitude2, unit
     ) * 1000).toInt()
 }
 
@@ -335,7 +335,6 @@ var cameraUpdate: Int = 0
 @Composable
 fun Map(
     navController: NavHostController,
-    isSwippeEnabled: Boolean,
     onSwipeChange: (Boolean) -> Unit
 ) {
 
@@ -367,7 +366,7 @@ fun Map(
 
 
     //Anchor variables
-    var anchorLocal: Anchor = Anchor("0.0", "0.0", "-1", "")
+    var anchorLocal = Anchor("0.0", "0.0", "-1", "")
     var anchorRemote = ""
     var anchorRemoteObj = Anchor("0.0", "0.0", "-1", "")
     var anchorDistanceMeters by remember { mutableIntStateOf(0) }
@@ -380,7 +379,7 @@ fun Map(
         val localViewModel = InstantiateViewModel.instantiateLocalViewModel()
 
         //Stime velocita local
-        val stimeVelocitaUiState: StimeVelocitaUiState = localViewModel!!.stimeVelocitaUiState
+        val stimeVelocitaUiState: StimeVelocitaUiState = localViewModel.stimeVelocitaUiState
 
         when (stimeVelocitaUiState) {
             is StimeVelocitaUiState.Error -> if(LOG_ENABLED)Log.d("DEBUG","Error stime velocita local")
@@ -388,7 +387,7 @@ fun Map(
             is StimeVelocitaUiState.Success -> {
 
                 val result =
-                    (localViewModel!!.stimeVelocitaUiState as StimeVelocitaUiState.Success).stimeVelocita
+                    (localViewModel.stimeVelocitaUiState as StimeVelocitaUiState.Success).stimeVelocita
                 if(LOG_ENABLED)Log.d("DEBUG","Success: Stime velocita local $result")
 
                 stimeVelocita = result
@@ -403,7 +402,7 @@ fun Map(
         }
 
         //Set Anchor state local
-        val setAnchorLocalUiState: SetAnchorLocalUiState = localViewModel!!.setAnchorUiState
+        val setAnchorLocalUiState: SetAnchorLocalUiState = localViewModel.setAnchorUiState
 
         when (setAnchorLocalUiState) {
             is SetAnchorLocalUiState.Error -> if(LOG_ENABLED)Log.d("DEBUG","Error set local anchor")
@@ -411,13 +410,13 @@ fun Map(
             is SetAnchorLocalUiState.Success -> {
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
                 if(LOG_ENABLED)Log.d("DEBUG","Success: Local connection set anchor")
-                val result = (localViewModel!!.setAnchorUiState as SetAnchorLocalUiState.Success).result
+                val result = (localViewModel.setAnchorUiState as SetAnchorLocalUiState.Success).result
                 if(LOG_ENABLED)Log.d("DEBUG","Result set anchor local: $result")
             }
         }
 
         //Get Anchor Local
-        val getAnchorLocalUiState: GetAnchorLocalUiState = localViewModel!!.getAnchorUiState
+        val getAnchorLocalUiState: GetAnchorLocalUiState = localViewModel.getAnchorUiState
 
         when (getAnchorLocalUiState) {
             is GetAnchorLocalUiState.Error -> if(LOG_ENABLED)Log.d("DEBUG","Error get local anchor")
@@ -425,7 +424,7 @@ fun Map(
             is GetAnchorLocalUiState.Success -> {
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
                 if(LOG_ENABLED)Log.d("DEBUG","Success: Local connection get anchor")
-                anchorLocal = (localViewModel!!.getAnchorUiState as GetAnchorLocalUiState.Success).anchor
+                anchorLocal = (localViewModel.getAnchorUiState as GetAnchorLocalUiState.Success).anchor
                 if(LOG_ENABLED)Log.d("DEBUG","Get Ancora locale: $anchorLocal")
             }
         }
@@ -435,11 +434,11 @@ fun Map(
             if(LOG_ENABLED)Log.d("DEBUG","set local anchor marker")
             if (anchorLocal.anchored == "1") {
                 anchorVisibility = true
-                updateAnchor(anchorVisibility)
+                updateAnchor(true)
                 colorAnchor = red
             } else if (anchorLocal.anchored == "0") {
                 anchorVisibility = false
-                updateAnchor(anchorVisibility)
+                updateAnchor(false)
                 colorAnchor = orange
             }
             //if(LOG_ENABLED)Log.d("DEBUG",ship_position.toString())
@@ -511,7 +510,7 @@ fun Map(
         val remoteViewModel = InstantiateViewModel.instantiateRemoteViewModel()
 
         //Stime velocita remote
-        val getstimeRemoteUiState: GetStimeRemoteUiState = remoteViewModel!!.getStimeRemoteUiState
+        val getstimeRemoteUiState: GetStimeRemoteUiState = remoteViewModel.getStimeRemoteUiState
 
         when (getstimeRemoteUiState) {
             is GetStimeRemoteUiState.Error -> if(LOG_ENABLED)Log.d("DEBUG","Error stime velocita remote")
@@ -520,7 +519,7 @@ fun Map(
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
                 if(LOG_ENABLED)Log.d("DEBUG","Success: Stime velocita remote")
                 stimeVelocita = Gson().fromJson(
-                    (remoteViewModel!!.getStimeRemoteUiState as GetStimeRemoteUiState.Success).stime,
+                    (remoteViewModel.getStimeRemoteUiState as GetStimeRemoteUiState.Success).stime,
                     JsonObject::class.java
                 )
                 if(LOG_ENABLED)Log.d("DEBUG","Success: Stime velocita remote $stimeVelocita")
@@ -528,7 +527,7 @@ fun Map(
         }
 
         //Anchor Remote
-        val anchorRemoteUiState: GetAnchorRemoteUiState = remoteViewModel!!.getAnchorRemoteUiState
+        val anchorRemoteUiState: GetAnchorRemoteUiState = remoteViewModel.getAnchorRemoteUiState
 
         when (anchorRemoteUiState) {
             is GetAnchorRemoteUiState.Error -> {
@@ -543,7 +542,7 @@ fun Map(
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
                 if(LOG_ENABLED)Log.d("DEBUG","Success: Remote connection get anchor")
                 anchorRemote =
-                    (remoteViewModel!!.getAnchorRemoteUiState as GetAnchorRemoteUiState.Success).anchor
+                    (remoteViewModel.getAnchorRemoteUiState as GetAnchorRemoteUiState.Success).anchor
                 if(LOG_ENABLED)Log.d("DEBUG","Anchor remote: $anchorRemote")
                 val list = anchorRemote.split(" ")
                 if(LOG_ENABLED)Log.d("DEBUG",list.toString())
@@ -563,11 +562,11 @@ fun Map(
             if (anchorRemoteObj.anchored != "-1") {
                 if (anchorRemoteObj.anchored == "1") {
                     anchorVisibility = true
-                    updateAnchor(anchorVisibility)
+                    updateAnchor(true)
                     colorAnchor = red
                 } else if (anchorRemoteObj.anchored == "0") {
                     anchorVisibility = false
-                    updateAnchor(anchorVisibility)
+                    updateAnchor(false)
                     colorAnchor = orange
                 }
             }
@@ -645,7 +644,7 @@ fun Map(
         destinationDirection, windDirection, windSpeed, trueWindAngle, stimeVelocita
     )
 
-    var lastMaxAngle by remember { mutableStateOf(0) }
+    var lastMaxAngle by remember { mutableIntStateOf(0) }
     var lastOptimalSail by remember { mutableStateOf("") }
     var lastVMax by remember { mutableStateOf("") }
     var lastVMaxEff by remember { mutableStateOf("") }
@@ -975,7 +974,7 @@ fun Map(
                     if (colorAnchor == orange) colorAnchor = red
                     else colorAnchor = orange
                     if (connectionState == ConnectionState.Local) {
-                        if (anchorLocal.latitude != null && anchorLocal.latitude != "0.0") {
+                        if (anchorLocal.latitude != "0.0") {
                             if(LOG_ENABLED)Log.d("DEBUG","send local anchor: $anchorLocal")
                             if(LOG_ENABLED)Log.d("DEBUG","send anchored: ${if (anchorLocal.anchored == "1") "0" else "1"}")
                             val localViewModel = InstantiateViewModel.instantiateLocalViewModel()
@@ -988,7 +987,7 @@ fun Map(
                                 "0" else anchorLocal.anchored = "1"
                         }
                     } else if(connectionState == ConnectionState.Remote) {
-                        if (anchorRemoteObj.latitude != null && anchorRemoteObj.latitude != "0.0") {
+                        if (anchorRemoteObj.latitude != "0.0") {
                             if (anchorRemoteObj.anchored == "1") anchorRemoteObj.anchored =
                                 "0" else anchorRemoteObj.anchored = "1"
                             anchorRemoteObj.latitude = shipPosition.latitude.toString()
@@ -996,7 +995,7 @@ fun Map(
                             val body = Gson().toJson(anchorRemoteObj)
                             if(LOG_ENABLED)Log.d("DEBUG","send remote anchor $body")
                             val remoteViewModel = InstantiateViewModel.instantiateRemoteViewModel()
-                            if(LOG_ENABLED)Log.d("DEBUG","result: " + (remoteViewModel?.setAnchor(body)))
+                            if(LOG_ENABLED)Log.d("DEBUG","result: " + (remoteViewModel.setAnchor(body)))
                         }
                     }
                 }, colors = ButtonDefaults.buttonColors(
@@ -1051,7 +1050,7 @@ fun Map(
                             shipPosition.longitude
                         )
                     )
-                    mapView?.controller?.setZoom(10)
+                    mapView?.controller?.setZoom(10.0)
                 },
                 colors = ButtonDefaults.buttonColors(
                     backgroundColor = Color(orange), // Background color

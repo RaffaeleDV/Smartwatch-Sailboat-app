@@ -37,6 +37,7 @@ import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
+import androidx.wear.compose.material.CircularProgressIndicator
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.PositionIndicator
@@ -63,7 +64,6 @@ import java.io.InputStreamReader
 @Composable
 fun Polars(
     navController: NavHostController,
-    isSwippeEnabled: Boolean,
     onSwipeChange: (Boolean) -> Unit
 ) {
     onSwipeChange(false)
@@ -99,13 +99,13 @@ fun Polars(
     if(connectionState == ConnectionState.Local){
         val localViewModel = InstantiateViewModel.instantiateLocalViewModel()
         //recInfo local
-        val recInfoUiState: RecInfoState = localViewModel!!.recInfoState
+        val recInfoUiState: RecInfoState = localViewModel.recInfoState
 
         when (recInfoUiState) {
             is RecInfoState.Error -> if(LOG_ENABLED) Log.d("DEBUG","Error recInfo local")
             is RecInfoState.Loading -> if(LOG_ENABLED) Log.d("DEBUG","Loading recInfo local")
             is RecInfoState.Success -> {
-                val result = (localViewModel!!.recInfoState as RecInfoState.Success).infoRec
+                val result = (localViewModel.recInfoState as RecInfoState.Success).infoRec
                 if(LOG_ENABLED) Log.d("DEBUG","Success: RecInfo local $result")
                 if(result == "true"){
                     polarRecState = true
@@ -118,7 +118,7 @@ fun Polars(
         }
 
         //Stime velocita local
-        val stimeVelocitaUiState: StimeVelocitaUiState = localViewModel!!.stimeVelocitaUiState
+        val stimeVelocitaUiState: StimeVelocitaUiState = localViewModel.stimeVelocitaUiState
 
         when (stimeVelocitaUiState) {
             is StimeVelocitaUiState.Error -> if(LOG_ENABLED) Log.d("DEBUG","Error stime velocita local")
@@ -126,7 +126,7 @@ fun Polars(
             is StimeVelocitaUiState.Success -> {
                 connectionState = ConnectionState.Local
                 val result =
-                    (localViewModel!!.stimeVelocitaUiState as StimeVelocitaUiState.Success).stimeVelocita
+                    (localViewModel.stimeVelocitaUiState as StimeVelocitaUiState.Success).stimeVelocita
                 if(LOG_ENABLED) Log.d("DEBUG","Success: Stime velocita local $result")
 
                 stimeVelocita = result
@@ -147,7 +147,7 @@ fun Polars(
         val remoteViewModel = InstantiateViewModel.instantiateRemoteViewModel()
 
         //Stime velocita remote
-        val getstimeRemoteUiState: GetStimeRemoteUiState = remoteViewModel!!.getStimeRemoteUiState
+        val getstimeRemoteUiState: GetStimeRemoteUiState = remoteViewModel.getStimeRemoteUiState
 
         when (getstimeRemoteUiState) {
             is GetStimeRemoteUiState.Error -> if(LOG_ENABLED) Log.d("DEBUG","Error stime velocita remote")
@@ -156,7 +156,7 @@ fun Polars(
                 //println((remoteViewModel.remoteUiState as RemoteUiState.Success).nmea)
                 if(LOG_ENABLED) Log.d("DEBUG","Success: Stime velocita remote")
                 stimeVelocita = Gson().fromJson(
-                    (remoteViewModel!!.getStimeRemoteUiState as GetStimeRemoteUiState.Success).stime,
+                    (remoteViewModel.getStimeRemoteUiState as GetStimeRemoteUiState.Success).stime,
                     JsonObject::class.java
                 )
                 if(LOG_ENABLED) Log.d("DEBUG","Success: Stime velocita remote $stimeVelocita")
@@ -228,7 +228,7 @@ fun Polars(
                         onClick = {
                             if (polarRecState) {
                                 polarRecState = false
-                                localViewModel!!.recPolars("")
+                                localViewModel.recPolars("")
                                 polarString = "Inizia registrazione"
                             } else {
                                 polarRecState = true
@@ -250,7 +250,7 @@ fun Polars(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Button(//Calcola button
-                            onClick = { localViewModel!!.calculatePolars() },
+                            onClick = { localViewModel.calculatePolars() },
                             modifier = Modifier
                                 .height(30.dp)
                                 .width(70.dp)
@@ -260,7 +260,7 @@ fun Polars(
                         }
                         Spacer(modifier = Modifier.width(20.dp))
                         Button(//Clear button
-                            onClick = { localViewModel!!.clearPolars() },
+                            onClick = { localViewModel.clearPolars() },
                             modifier = Modifier
                                 .height(30.dp)
                                 //.alpha(if (connectionState == ConnectionState.Local) 1f else 0f)
@@ -423,7 +423,7 @@ fun Polars(
                         showDialog = false
                         if(LOG_ENABLED) Log.d("DEBUG","Text= $textState")
                         val localViewModel = InstantiateViewModel.instantiateLocalViewModel()
-                        localViewModel!!.recPolars(textState)
+                        localViewModel.recPolars(textState)
                         if(textState != ""){
                             polarString = "Termina"
                         }
@@ -438,7 +438,10 @@ fun Polars(
             }
         }
         //Dialog chart
-        Dialog(showDialog = showChart, onDismissRequest = { showChart = false }) {
+        Dialog(
+            showDialog = showChart,
+            onDismissRequest = { showChart = false }
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -448,6 +451,8 @@ fun Polars(
                     ),
                 contentAlignment = Alignment.Center,
             ) {
+                var isLoading by remember { mutableStateOf(true) }
+
                 AndroidView(modifier = Modifier
                     .matchParentSize()
                     .align(Alignment.Center),
@@ -457,15 +462,20 @@ fun Polars(
                             // Workaround for Bug 1758212
                             setContentDelegate(object : GeckoSession.ContentDelegate {})
                         }
-                        val runtimeSettings =
-                            GeckoRuntimeSettings.Builder().consoleOutput(true).build()
 
-                        var sRuntime: GeckoRuntime? = null
 
-                        if (sRuntime == null) {
-                            // GeckoRuntime can only be initialized once per process
-                            //sRuntime = GeckoRuntime.create(context, runtimeSettings)
-                            sRuntime = GeckoRuntime.getDefault(context)
+                        // GeckoRuntime can only be initialized once per process
+                        //sRuntime = GeckoRuntime.create(context, runtimeSettings)
+                        /* val runtimeSettings =
+                             GeckoRuntimeSettings.Builder().consoleOutput(true).build()*/
+                        val sRuntime: GeckoRuntime = GeckoRuntime.getDefault(context)
+
+
+                        session.progressDelegate = object : GeckoSession.ProgressDelegate {
+                            override fun onPageStop(session: GeckoSession, success: Boolean) {
+                                isLoading = false
+                                super.onPageStop(session, success)
+                            }
                         }
 
                         session.open(sRuntime)
@@ -795,26 +805,51 @@ fun Polars(
 
                         v
 
-                    }, update = { v ->
+                    }, update = {
                     })
+                if(isLoading){
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .size(100.dp)
+                            .align(Alignment.Center),
+                        strokeWidth = 8.dp,
+                        trackColor = MaterialTheme.colors.primaryVariant,
+
+                    )
+                }
+
+                if(!isLoading){
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Button(
+                            onClick = { showChart = false },
+                            modifier = Modifier
+                                .size(30.dp)
+                                .padding(bottom = 5.dp)
+                                .align(Alignment.BottomCenter)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_action_back),
+                                contentDescription = "Back",
+                                modifier = Modifier.size(15.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 
 }
 
-fun createDiv(id: String, content: String): String {
-
-    return "<div id=$id>$content</div>"
-
-}
+/*
 fun readAssetFile(context: Context, fileName: String): String {
     return context.assets.open(fileName).use { inputStream ->
         BufferedReader(InputStreamReader(inputStream)).use { reader ->
             reader.readText()
         }
     }
-}
+}*/
 
 
 
