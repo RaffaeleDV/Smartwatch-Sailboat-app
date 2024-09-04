@@ -16,26 +16,21 @@ fun windSpeedKnots(value: Float, unit: String): Double {
 fun readNMEA(data: String): HashMap<String, String> {
 
     val hm = HashMap<String, String>()
-    val sentenze = data.split('\n')
+    val sentences = data.split('\n')
 
     Log.d("DEBUG", "readNMEA")
 
-    sentenze.forEachIndexed { _, s ->
+    sentences.forEachIndexed { _, s ->
         run {
-            //println("Index: "+ index + " Singola: " + s)
-
             if (!s.isNullOrEmpty()) {
                 //println(s.toString())
-                if (s.isNotEmpty() && !s.equals("") && !s.equals(" ") && !s.isBlank()) {
+                if (s.isNotEmpty() && s != "" && s != " " && s.isNotBlank()) {
                     val row = s.split(',')
 
-                    //println("Virgola: "+row[0])
-
-                    //println(row.toString())
                     if (row[0].isNotEmpty()) {
                         when (row[0].substring(3)) {
+
                             "GLL" -> {
-                                //println("GLL")
                                 val lat = row[1]
                                 val latDegree = lat.substring(0, 2)
                                 val latMinutes = lat.substring(2, 8)
@@ -64,8 +59,6 @@ fun readNMEA(data: String): HashMap<String, String> {
 
                                 hm["latitude"] = latDecimal
                                 hm["longitude"] = longDecimal
-                                //println(latDecimal + " " + longDecimal)
-
                             }
 
                             "MWV" -> {

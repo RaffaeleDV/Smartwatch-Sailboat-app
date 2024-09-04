@@ -203,7 +203,7 @@ fun routeCalculator(
             velocitaIndex[1],
             windSpeed
         )
-        velocitas.add(vel)
+        //velocitas.add(vel)
 
         if (vel < 0) {
             return arrayOf("vel < 0")
