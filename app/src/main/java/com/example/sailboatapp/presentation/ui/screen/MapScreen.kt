@@ -42,11 +42,11 @@ import com.example.sailboatapp.R
 import com.example.sailboatapp.presentation.model.Anchor
 import com.example.sailboatapp.presentation.network.ConnectionState
 import com.example.sailboatapp.presentation.network.InstantiateViewModel
-import com.example.sailboatapp.presentation.network.connectionState
 import com.example.sailboatapp.presentation.orange
 import com.example.sailboatapp.presentation.red
 import com.example.sailboatapp.presentation.ui.DEGREE_SYMBOL
 import com.example.sailboatapp.presentation.ui.KNOT_SYMBOL
+import com.example.sailboatapp.presentation.ui.connectionState
 import com.google.android.gms.maps.model.LatLng
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -306,7 +306,7 @@ fun getDistanceBetweenPointsMeters(
     ) * 1000).toInt()
 }
 
-var anchorDistanceLimitMeters: Double = 100.0
+var anchorDistanceLimitMeters: Double = 20.0
 fun checkAnchorDistance(anchorLatLng: LatLng, shipLatLng: LatLng): Boolean {
     //if(LOG_ENABLED)Log.d("DEBUG","input data check= "+anchorLatLng.toString()+shipLatLng.toString())
     val distance = getDistanceBetweenPointsMeters(
@@ -858,7 +858,7 @@ fun Map(
                     val icon = ResourcesCompat.getDrawable(
                         resources, R.drawable.ic_action_ship_marker, null
                     )
-                    icon?.mutate()?.setTint(0xFFFFFFFF.toInt())
+                    //icon?.mutate()?.setTint(0xFFFFFFFF.toInt())
                     ship?.icon = icon
                     ship?.rotation = shipDirection.toFloat()
                     ship?.alpha = 1f

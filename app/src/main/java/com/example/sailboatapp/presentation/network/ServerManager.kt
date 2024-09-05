@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.example.sailboatapp.presentation.network.NetworkUtil.isNetworkAvailable
 import com.example.sailboatapp.presentation.network.NetworkUtil.isServerReachable
+import com.example.sailboatapp.presentation.ui.connectionState
 import com.example.sailboatapp.presentation.ui.screen.LOG_ENABLED
 import com.example.sailboatapp.presentation.ui.screen.raspberryIp
 import com.example.sailboatapp.presentation.ui.screen.websockifySocket
@@ -20,7 +21,7 @@ enum class ConnectionState {
     Local, Remote, Loading, Offline
 }
 
-var connectionState: ConnectionState = ConnectionState.Loading
+var checkWConnection = "Locale"
 
 class ServerManager(context: Context) : CoroutineScope {
     private val context: Context = context
@@ -44,6 +45,8 @@ class ServerManager(context: Context) : CoroutineScope {
                             )
                             connectionState = ConnectionState.Local
                         } else {
+                            checkWConnection = "Remota"
+                            if (LOG_ENABLED) Log.d("DEBUG", "ServerManager: checkWConnection: Remota")
                             if (isServerReachable("https://${ServerConfig.REMOTE_SERVER}/")) {
                                 if (LOG_ENABLED) Log.d(
                                     "DEBUG",

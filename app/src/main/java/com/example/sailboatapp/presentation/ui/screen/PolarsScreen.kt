@@ -49,7 +49,8 @@ import androidx.wear.compose.material.dialog.Dialog
 import com.example.sailboatapp.R
 import com.example.sailboatapp.presentation.network.ConnectionState
 import com.example.sailboatapp.presentation.network.InstantiateViewModel
-import com.example.sailboatapp.presentation.network.connectionState
+import com.example.sailboatapp.presentation.ui.connectionState
+
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import org.mozilla.geckoview.GeckoRuntime

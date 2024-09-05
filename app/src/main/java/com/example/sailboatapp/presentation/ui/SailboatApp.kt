@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -15,8 +16,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.CircularProgressIndicator
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
@@ -25,7 +28,8 @@ import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.example.sailboatapp.presentation.MainActivity
 import com.example.sailboatapp.presentation.network.ConnectionState
-import com.example.sailboatapp.presentation.network.connectionState
+import com.example.sailboatapp.presentation.network.checkWConnection
+
 import com.example.sailboatapp.presentation.ui.screen.Homepage
 import com.example.sailboatapp.presentation.ui.screen.LOG_ENABLED
 import com.example.sailboatapp.presentation.ui.screen.Map
@@ -36,12 +40,13 @@ import kotlinx.coroutines.delay
 const val DEGREE_SYMBOL = "\u00B0"
 const val KNOT_SYMBOL = "Kn"
 
+var connectionState: ConnectionState = ConnectionState.Loading
 
 @Composable
 fun SailboatApp(
     mainActivity: MainActivity,
 ) {
-
+    var checkConnection by remember { mutableStateOf("") }
     var isSwippeEnabled by remember { mutableStateOf(true) }
 
     if (LOG_ENABLED) Log.d("DEBUG", "connectionState: $connectionState")
@@ -53,7 +58,9 @@ fun SailboatApp(
         while (true) {
             if (LOG_ENABLED) Log.d("DEBUG", "connectionState: $connectionState")
             // Simulate a delay
-            if (connectionState == ConnectionState.Remote || connectionState == ConnectionState.Local) {
+            checkConnection = checkWConnection
+            if (LOG_ENABLED) Log.d("DEBUG", "checkConnection: $checkConnection")
+            if (connectionState == ConnectionState.Remote || connectionState == ConnectionState.Local || connectionState == ConnectionState.Offline) {
                 isReady = true
                 break
             }
@@ -92,18 +99,41 @@ fun SailboatApp(
                     Test()
                 }*/
             }
+        } else if(connectionState == ConnectionState.Offline) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Server non raggiungibile o Dispositivo Offline",
+                    fontSize = 18.sp,
+                    textAlign = TextAlign.Center
+                )
+                Button(
+                    onClick = {
+                        mainActivity.finish()
+                    },
+                    modifier = Modifier.height(30.dp)
+                ) {
+                    Text(text = "Close")
+                }
+            }
         }
-
-    } else {
+    }else {
         // Placeholder or Loading UI
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             Text(
-                text = "Connection ${connectionState}...",
-                fontSize = 18.sp
+                text = "Connection ${connectionState}...\n" +
+                        "Prova server $checkConnection...",
+                fontSize = 18.sp,
+                textAlign = TextAlign.Center
+
             )
             /*Button(
                 modifier = Modifier.width(100.dp),

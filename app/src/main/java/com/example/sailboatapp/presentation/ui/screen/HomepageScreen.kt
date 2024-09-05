@@ -63,9 +63,9 @@ import com.example.sailboatapp.presentation.network.ConnectionState
 import com.example.sailboatapp.presentation.network.InstantiateViewModel
 import com.example.sailboatapp.presentation.network.ServerConfig.RASPBERRY_IP_DEFAULT
 import com.example.sailboatapp.presentation.network.ServerConfig.WEBSOCKIFY_SOCKET_DEFAULT
-import com.example.sailboatapp.presentation.network.connectionState
 import com.example.sailboatapp.presentation.ui.DEGREE_SYMBOL
 import com.example.sailboatapp.presentation.ui.KNOT_SYMBOL
+import com.example.sailboatapp.presentation.ui.connectionState
 import com.google.gson.JsonObject
 import kotlinx.coroutines.launch
 
@@ -449,6 +449,7 @@ fun Homepage(
                 item { Text(text = "IP raspberry: ") }
                 item { Spacer(modifier = Modifier.height(10.dp)) }
                 item {
+                    textIp = raspberryIp
                     BasicTextField(
                         modifier = Modifier,//.absoluteOffset { IntOffset(50,160) },
                         value = textIp,
@@ -482,6 +483,7 @@ fun Homepage(
                 item { Text(text = "Socket raspberry: ") }
                 item { Spacer(modifier = Modifier.height(10.dp)) }
                 item {
+                    textSocket = websockifySocket
                     BasicTextField(
                         modifier = Modifier,//.absoluteOffset { IntOffset(50,160) },
                         value = textSocket,
@@ -498,6 +500,9 @@ fun Homepage(
                         //keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.),
                         textStyle = TextStyle.Default,
                         singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number
+                        ),
                         decorationBox = { innerTextField ->
                             Row(
                                 modifier = Modifier
