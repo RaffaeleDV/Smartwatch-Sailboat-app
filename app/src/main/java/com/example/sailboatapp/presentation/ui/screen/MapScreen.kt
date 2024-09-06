@@ -822,7 +822,7 @@ fun Map(
                 MapView(ctx).apply {
 
                     mapView = this
-                    this.maxZoomLevel = maxZoom
+                    //this.maxZoomLevel = maxZoom
 
                     setTileSource(tileSource)
                     setMultiTouchControls(true)
