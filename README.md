@@ -1,22 +1,4 @@
-Lo sviluppo e la diffusione dei dispositivi wearable rappresenta un’opportunità per migliorare
-molti settori, tra cui la navigazione marittima. Questa tesi mira a sfruttare questi dispositivi, nello
-specifico quei dispositivi indicati come smartwatch, sviluppando un’applicazione su Android
-Wear OS che mette a disposizione degli utenti una collezione di funzionalità per facilitare la
-navigazione a vela.
-L’applicazione permette di aver accesso alle seguenti funzionalità: la visualizzazione dei dati
-fondamentali necessari alla navigazione come velocità del vento, velocità massima dell’ultima
-raffica di vento, l’orientamento dell’imbarcazione; la gestione dell’ancora dell’imbarcazione e
-la distanza di sicurezza dalla stessa; la visualizzazione dell’imbarcazione tramite una mappa e
-la sua navigazione; la scelta di una rotta e i dati necessari alla navigazione nella sua direzione;
-la registrazione dei dati provenienti dai sensori della barca necessari alla creazione del grafico
-polare; la visualizzazione di vari grafici polari legati all’imbarcazione in base alla vela adottata;
-una gestione trasparente delle connessioni sfruttando la connessione locale mentre si è sull’imbarcazione
-o remota in caso di utilizzi dell’app lontano da essa; una serie di configurazioni
-dell’applicazione necessario all’utilizzo su diverse imbarcazioni.
-Offre un facile accesso a informazioni e funzioni direttamente al polso dell’utente, l’applicazione
-si propone di migliorare la fruibilità e la sicurezza della navigazione. Il progetto si integra
-con successo con un backend esistente, garantendo una sincronizzazione dei dati ininterrotta e
-in tempo reale.
-L’applicazione è stata sviluppata con successo riuscendo a implementare tutte le funzionalità
-prefissate, il testing è stato effettuato su una serie di smartwatch in commercio ed è stato testato
-il corretto interfacciamento al backend già esistente.
+The development and spread of wearable devices represent an opportunity to improve many sectors, including maritime navigation. This thesis aims to leverage these devices, specifically those known as smartwatches, by developing an application for Android Wear OS that provides users with a collection of features to facilitate sailing navigation.
+The application allows access to the following functionalities: the display of essential data needed for navigation such as wind speed, maximum wind gust speed, and the boat’s orientation; anchor management and monitoring of the safe distance from the anchor; visualization of the boat on a map and its navigation; route selection and the necessary data for navigating in that direction; recording data from the boat’s sensors needed for creating polar charts; viewing various polar charts related to the boat based on the sail used; transparent management of connections by utilizing the local connection while on board or a remote connection when using the app away from the boat; and a series of application settings necessary for use on different boats.
+Offering easy access to information and functions directly on the user’s wrist, the application aims to improve the usability and safety of navigation. The project successfully integrates with an existing backend, ensuring uninterrupted and real-time data synchronization.
+The application was successfully developed, implementing all the intended functionalities. Testing was conducted on a range of commercially available smartwatches, and the correct interfacing with the existing backend was verified.
